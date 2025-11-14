@@ -17,37 +17,37 @@ help:
 	@echo "  make clean          - Clean build artifacts"
 
 install:
-	pnpm install
+	bun install
 
 dev:
-	pnpm dev
+	bun dev
 
 build:
-	pnpm build
+	bun run build
 
 preview:
-	pnpm preview
+	bun preview
 
 test:
-	pnpm test
+	bun test
 
 test-ui:
-	pnpm test:ui
+	bun test:ui
 
 test-coverage:
-	pnpm test:coverage
+	bun test:coverage
 
 lint:
-	pnpm lint
+	bun lint
 
 format:
-	pnpm format
+	bun format
 
 check:
-	pnpm check
+	bun check
 
 type-check:
-	pnpm tsc --noEmit
+	bun tsc --noEmit
 
 clean:
-	rm -rf dist node_modules .pnpm-store
+	rm -rf dist node_modules

@@ -14,6 +14,7 @@ A recreation of the dispatching mini-game from Dispatch by AdHoc Studios, built 
 
 - React 19
 - TypeScript
+- Bun (runtime and package manager)
 - Vite
 - Framer Motion (animations)
 - Vitest (testing)
@@ -23,8 +24,7 @@ A recreation of the dispatching mini-game from Dispatch by AdHoc Studios, built 
 
 ### Prerequisites
 
-- Node.js (v18 or higher recommended)
-- pnpm
+- Bun (v1.0 or higher recommended)
 
 ### Installation
 
