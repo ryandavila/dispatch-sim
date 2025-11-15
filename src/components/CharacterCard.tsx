@@ -24,7 +24,7 @@ export function CharacterCard({ character, onClick, isSelected = false }: Charac
       </div>
 
       <div className="character-card-chart">
-        <RadarChart stats={character.stats} maxValue={10} size={200} />
+        <RadarChart stats={character.stats} maxValue={10} size={380} />
       </div>
 
       {character.notes && (

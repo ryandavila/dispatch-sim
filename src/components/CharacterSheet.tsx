@@ -105,8 +105,8 @@ export function CharacterSheet({ character, onUpdateCharacter }: CharacterSheetP
                 <motion.span
                   className="stat-value"
                   key={character.stats[pillar]}
-                  initial={{ scale: 1.5, color: '#3b82f6' }}
-                  animate={{ scale: 1, color: '#ffffff' }}
+                  initial={{ scale: 1.5, color: '#14b8a6' }}
+                  animate={{ scale: 1, color: '#2a2419' }}
                   transition={{ duration: 0.3 }}
                 >
                   {character.stats[pillar]}

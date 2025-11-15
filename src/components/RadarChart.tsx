@@ -14,7 +14,7 @@ export function RadarChart({ stats, maxValue = 10, size = 300, onVertexClick }: 
   const [hoveredPillar, setHoveredPillar] = useState<PillarType | null>(null);
 
   const center = size / 2;
-  const radius = (size / 2) * 0.8; // Leave some padding
+  const radius = (size / 2) * 0.65; // Leave more padding for labels
 
   // Calculate angle for each pillar (starting from top, going clockwise)
   const angleStep = (2 * Math.PI) / 5;
@@ -72,7 +72,7 @@ export function RadarChart({ stats, maxValue = 10, size = 300, onVertexClick }: 
               key={level}
               points={gridPoints}
               fill="none"
-              stroke="rgba(255, 255, 255, 0.1)"
+              stroke="rgba(138, 122, 94, 0.3)"
               strokeWidth="1"
             />
           );
@@ -88,7 +88,7 @@ export function RadarChart({ stats, maxValue = 10, size = 300, onVertexClick }: 
               y1={center}
               x2={pos.x}
               y2={pos.y}
-              stroke="rgba(255, 255, 255, 0.1)"
+              stroke="rgba(138, 122, 94, 0.3)"
               strokeWidth="1"
             />
           );
@@ -97,8 +97,8 @@ export function RadarChart({ stats, maxValue = 10, size = 300, onVertexClick }: 
         {/* Stat area (filled polygon) */}
         <motion.polygon
           points={statPoints}
-          fill="rgba(59, 130, 246, 0.3)"
-          stroke="rgb(59, 130, 246)"
+          fill="rgba(20, 184, 166, 0.3)"
+          stroke="rgb(20, 184, 166)"
           strokeWidth="2"
           initial={{ opacity: 0, scale: 0 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -113,7 +113,7 @@ export function RadarChart({ stats, maxValue = 10, size = 300, onVertexClick }: 
 
           // Calculate label position (outside the chart)
           const angle = startAngle + angleStep * index;
-          const labelDistance = radius + 30;
+          const labelDistance = radius + 40;
           const labelX = center + labelDistance * Math.cos(angle);
           const labelY = center + labelDistance * Math.sin(angle);
 
@@ -124,8 +124,8 @@ export function RadarChart({ stats, maxValue = 10, size = 300, onVertexClick }: 
                 cx={statPos.x}
                 cy={statPos.y}
                 r={isHovered ? 8 : 6}
-                fill="rgb(59, 130, 246)"
-                stroke="white"
+                fill="rgb(20, 184, 166)"
+                stroke="rgb(15, 118, 110)"
                 strokeWidth="2"
                 style={{ cursor: onVertexClick ? 'pointer' : 'default' }}
                 whileHover={{ scale: 1.2 }}
@@ -168,9 +168,10 @@ export function RadarChart({ stats, maxValue = 10, size = 300, onVertexClick }: 
                 y={labelY}
                 textAnchor="middle"
                 dominantBaseline="middle"
-                fill="white"
-                fontSize="14"
-                fontWeight="500"
+                fill="#2a2419"
+                fontSize="12"
+                fontWeight="700"
+                style={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}
               >
                 {pillar}
               </text>

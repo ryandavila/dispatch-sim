@@ -27,7 +27,7 @@ export function OverlayRadarChart({
   const [_hoveredPillar, _setHoveredPillar] = useState<PillarType | null>(null);
 
   const center = size / 2;
-  const radius = (size / 2) * 0.8;
+  const radius = (size / 2) * 0.65;
 
   const angleStep = (2 * Math.PI) / 5;
   const startAngle = -Math.PI / 2;
@@ -75,7 +75,7 @@ export function OverlayRadarChart({
               key={level}
               points={gridPoints}
               fill="none"
-              stroke="rgba(255, 255, 255, 0.1)"
+              stroke="rgba(138, 122, 94, 0.3)"
               strokeWidth="1"
             />
           );
@@ -91,7 +91,7 @@ export function OverlayRadarChart({
               y1={center}
               x2={pos.x}
               y2={pos.y}
-              stroke="rgba(255, 255, 255, 0.1)"
+              stroke="rgba(138, 122, 94, 0.3)"
               strokeWidth="1"
             />
           );
@@ -122,7 +122,7 @@ export function OverlayRadarChart({
         {/* Pillar labels */}
         {PILLARS.map((pillar, index) => {
           const angle = startAngle + angleStep * index;
-          const labelDistance = radius + 30;
+          const labelDistance = radius + 40;
           const labelX = center + labelDistance * Math.cos(angle);
           const labelY = center + labelDistance * Math.sin(angle);
 
@@ -133,9 +133,10 @@ export function OverlayRadarChart({
               y={labelY}
               textAnchor="middle"
               dominantBaseline="middle"
-              fill="white"
-              fontSize="14"
-              fontWeight="500"
+              fill="#2a2419"
+              fontSize="12"
+              fontWeight="700"
+              style={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}
             >
               {pillar}
             </text>
