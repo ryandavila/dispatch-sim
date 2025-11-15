@@ -13,7 +13,7 @@ export function Home() {
           to="/roster"
           className="px-8 py-4 bg-blue-600 hover:bg-blue-700 rounded-lg text-lg font-semibold transition-colors"
         >
-          View Agent Roster
+          View Roster
         </Link>
         <Link
           to="/missions"
