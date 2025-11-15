@@ -326,6 +326,108 @@
   font-weight: 800;
 }
 
+/* Roster Filters */
+.roster-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: linear-gradient(to bottom, #f5f0e6 0%, #e8dcc4 100%);
+  border: 3px solid #2a3f3f;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  position: relative;
+}
+
+.roster-filters::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 24px;
+  background: linear-gradient(to bottom, #d4c4a8 0%, #c8b89c 100%);
+  border-bottom: 2px solid #8a7a5e;
+  border-radius: 2px 2px 0 0;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  position: relative;
+  z-index: 1;
+}
+
+.filter-group:first-child {
+  margin-top: 1rem;
+}
+
+.filter-label {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #2a2419;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.filter-select {
+  background: rgba(232, 220, 196, 0.5);
+  border: 2px solid rgba(138, 122, 94, 0.5);
+  border-radius: 4px;
+  padding: 0.75rem 1rem;
+  font-size: 0.95rem;
+  color: #2a2419;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filter-select:hover {
+  background: rgba(212, 196, 168, 0.8);
+  border-color: #6b5d48;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: #14b8a6;
+  box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.2);
+}
+
+.tag-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.tag-filter-button {
+  background: rgba(107, 93, 72, 0.1);
+  border: 2px solid rgba(138, 122, 94, 0.3);
+  border-radius: 4px;
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #3d3426;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tag-filter-button:hover {
+  background: rgba(107, 93, 72, 0.15);
+  border-color: rgba(138, 122, 94, 0.5);
+  transform: translateY(-1px);
+}
+
+.tag-filter-button.active {
+  background: rgba(20, 184, 166, 0.15);
+  border-color: #14b8a6;
+  border-width: 3px;
+  color: #0f766e;
+}
+
 .character-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));

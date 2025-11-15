@@ -1,15 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CharacterCard } from '../components/CharacterCard';
 import { CharacterSheet } from '../components/CharacterSheet';
 import type { Character } from '../types/character';
 import { loadAgentById, loadAgents } from '../utils/dataLoader';
 
+type SortOption = 'name' | 'level' | 'combat' | 'vigor' | 'mobility' | 'charisma' | 'intellect';
+
 export function Roster() {
   const agents = loadAgents();
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const _navigate = useNavigate();
+  const [sortBy, setSortBy] = useState<SortOption>('name');
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
 
   // Handle browser back/forward buttons
   useEffect(() => {
@@ -36,6 +40,53 @@ export function Roster() {
     setSearchParams({});
   };
 
+  // Get all unique tags from agents
+  const allTags = useMemo(() => {
+    const tagSet = new Set<string>();
+    for (const agent of agents) {
+      if (agent.tags) {
+        for (const tag of agent.tags) {
+          tagSet.add(tag);
+        }
+      }
+    }
+    return Array.from(tagSet).sort();
+  }, [agents]);
+
+  // Filter and sort agents
+  const filteredAndSortedAgents = useMemo(() => {
+    let filtered = [...agents];
+
+    // Apply tag filter
+    if (selectedTag) {
+      filtered = filtered.filter((agent) => agent.tags?.includes(selectedTag));
+    }
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'name':
+          return a.name.localeCompare(b.name);
+        case 'level':
+          return b.level - a.level; // Descending
+        case 'combat':
+          return b.stats.Combat - a.stats.Combat;
+        case 'vigor':
+          return b.stats.Vigor - a.stats.Vigor;
+        case 'mobility':
+          return b.stats.Mobility - a.stats.Mobility;
+        case 'charisma':
+          return b.stats.Charisma - a.stats.Charisma;
+        case 'intellect':
+          return b.stats.Intellect - a.stats.Intellect;
+        default:
+          return 0;
+      }
+    });
+
+    return filtered;
+  }, [agents, sortBy, selectedTag]);
+
   return (
     <div className="w-full">
       {selectedCharacter && (
@@ -51,8 +102,55 @@ export function Roster() {
         ) : (
           <div className="character-roster">
             <h2>Agent Roster</h2>
+
+            {/* Filters */}
+            <div className="roster-filters">
+              <div className="filter-group">
+                <label htmlFor="sort-select" className="filter-label">
+                  Sort By:
+                </label>
+                <select
+                  id="sort-select"
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as SortOption)}
+                  className="filter-select"
+                >
+                  <option value="name">Name (A-Z)</option>
+                  <option value="level">Level (High-Low)</option>
+                  <option value="combat">Combat (High-Low)</option>
+                  <option value="vigor">Vigor (High-Low)</option>
+                  <option value="mobility">Mobility (High-Low)</option>
+                  <option value="charisma">Charisma (High-Low)</option>
+                  <option value="intellect">Intellect (High-Low)</option>
+                </select>
+              </div>
+
+              <div className="filter-group">
+                <span className="filter-label">Filter by Tag:</span>
+                <div className="tag-filters">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedTag(null)}
+                    className={`tag-filter-button ${selectedTag === null ? 'active' : ''}`}
+                  >
+                    All
+                  </button>
+                  {allTags.map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => setSelectedTag(tag)}
+                      className={`tag-filter-button ${selectedTag === tag ? 'active' : ''}`}
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
             <div className="character-grid">
-              {agents.map((agent) => (
+              {filteredAndSortedAgents.map((agent) => (
                 <CharacterCard
                   key={agent.id}
                   character={agent}
