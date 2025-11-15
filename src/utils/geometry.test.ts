@@ -4,6 +4,7 @@ import {
   calculatePentagonVertices,
   calculatePolygonArea,
   calculateSuccessProbability,
+  calculateTeamSuccessProbability,
   combineStats,
   fullyEncompasses,
 } from './geometry';
@@ -293,6 +294,167 @@ describe('Geometry Utilities', () => {
 
       const probability = calculateSuccessProbability(stats, stats);
       expect(probability).toBe(1.0);
+    });
+  });
+
+  describe('calculateTeamSuccessProbability', () => {
+    it('should return 0% for empty team', () => {
+      const missionRequirements: StatPool = {
+        Combat: 5,
+        Vigor: 5,
+        Mobility: 5,
+        Charisma: 5,
+        Intellect: 5,
+      };
+
+      const probability = calculateTeamSuccessProbability([], missionRequirements);
+      expect(probability).toBe(0);
+    });
+
+    it('should return 100% when team combined stats meet all requirements', () => {
+      const agent1: StatPool = {
+        Combat: 8,
+        Vigor: 3,
+        Mobility: 4,
+        Charisma: 2,
+        Intellect: 6,
+      };
+
+      const agent2: StatPool = {
+        Combat: 3,
+        Vigor: 7,
+        Mobility: 6,
+        Charisma: 8,
+        Intellect: 4,
+      };
+
+      const missionRequirements: StatPool = {
+        Combat: 5,
+        Vigor: 5,
+        Mobility: 5,
+        Charisma: 5,
+        Intellect: 5,
+      };
+
+      // Combined team has max of each: Combat:8, Vigor:7, Mobility:6, Charisma:8, Intellect:6
+      // All exceed requirements of 5
+      const probability = calculateTeamSuccessProbability([agent1, agent2], missionRequirements);
+      expect(probability).toBe(1.0);
+    });
+
+    it('should handle single agent team', () => {
+      const agent: StatPool = {
+        Combat: 7,
+        Vigor: 7,
+        Mobility: 7,
+        Charisma: 7,
+        Intellect: 7,
+      };
+
+      const missionRequirements: StatPool = {
+        Combat: 5,
+        Vigor: 5,
+        Mobility: 5,
+        Charisma: 5,
+        Intellect: 5,
+      };
+
+      const probability = calculateTeamSuccessProbability([agent], missionRequirements);
+      expect(probability).toBe(1.0);
+    });
+
+    it('should return partial probability when team does not fully meet requirements', () => {
+      const agent1: StatPool = {
+        Combat: 3,
+        Vigor: 2,
+        Mobility: 4,
+        Charisma: 1,
+        Intellect: 2,
+      };
+
+      const agent2: StatPool = {
+        Combat: 2,
+        Vigor: 3,
+        Mobility: 2,
+        Charisma: 4,
+        Intellect: 3,
+      };
+
+      const missionRequirements: StatPool = {
+        Combat: 8,
+        Vigor: 8,
+        Mobility: 8,
+        Charisma: 8,
+        Intellect: 8,
+      };
+
+      // Combined: Combat:3, Vigor:3, Mobility:4, Charisma:4, Intellect:3
+      // All below requirements
+      const probability = calculateTeamSuccessProbability([agent1, agent2], missionRequirements);
+      expect(probability).toBeGreaterThan(0);
+      expect(probability).toBeLessThan(1.0);
+    });
+
+    it('should combine three or more agents correctly', () => {
+      const agent1: StatPool = {
+        Combat: 10,
+        Vigor: 1,
+        Mobility: 1,
+        Charisma: 1,
+        Intellect: 1,
+      };
+
+      const agent2: StatPool = {
+        Combat: 1,
+        Vigor: 10,
+        Mobility: 1,
+        Charisma: 1,
+        Intellect: 1,
+      };
+
+      const agent3: StatPool = {
+        Combat: 1,
+        Vigor: 1,
+        Mobility: 10,
+        Charisma: 10,
+        Intellect: 10,
+      };
+
+      const missionRequirements: StatPool = {
+        Combat: 5,
+        Vigor: 5,
+        Mobility: 5,
+        Charisma: 5,
+        Intellect: 5,
+      };
+
+      // Combined: all stats should be at or above requirements
+      const probability = calculateTeamSuccessProbability(
+        [agent1, agent2, agent3],
+        missionRequirements
+      );
+      expect(probability).toBe(1.0);
+    });
+
+    it('should never exceed 100% probability', () => {
+      const superAgent: StatPool = {
+        Combat: 10,
+        Vigor: 10,
+        Mobility: 10,
+        Charisma: 10,
+        Intellect: 10,
+      };
+
+      const missionRequirements: StatPool = {
+        Combat: 1,
+        Vigor: 1,
+        Mobility: 1,
+        Charisma: 1,
+        Intellect: 1,
+      };
+
+      const probability = calculateTeamSuccessProbability([superAgent], missionRequirements);
+      expect(probability).toBeLessThanOrEqual(1.0);
     });
   });
 });

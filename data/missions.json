@@ -4,6 +4,8 @@
     "name": "Reconnaissance",
     "description": "Gather intel on enemy positions without being detected",
     "difficulty": "Easy",
+    "maxAgents": 2,
+    "excludedAgents": ["flambae", "phenomaman"],
     "requirements": {
       "Combat": 1,
       "Vigor": 1,
@@ -20,6 +22,8 @@
     "name": "Hostage Negotiation",
     "description": "Negotiate the release of hostages from armed captors",
     "difficulty": "Medium",
+    "maxAgents": 3,
+    "excludedAgents": ["punch-up", "golem"],
     "requirements": {
       "Combat": 2,
       "Vigor": 2,
@@ -36,6 +40,7 @@
     "name": "Hot Extraction",
     "description": "Extract VIP from hostile territory under enemy fire",
     "difficulty": "Hard",
+    "maxAgents": 4,
     "requirements": {
       "Combat": 4,
       "Vigor": 3,
@@ -52,6 +57,8 @@
     "name": "Deep Cover Infiltration",
     "description": "Infiltrate enemy organization and maintain cover for extended operation",
     "difficulty": "Extreme",
+    "maxAgents": 4,
+    "excludedAgents": ["phenomaman", "flambae", "punch-up"],
     "requirements": {
       "Combat": 3,
       "Vigor": 4,
@@ -68,6 +75,8 @@
     "name": "Courier Run",
     "description": "Deliver sensitive documents across the city quickly and safely",
     "difficulty": "Easy",
+    "maxAgents": 1,
+    "excludedAgents": ["phenomaman"],
     "requirements": {
       "Combat": 1,
       "Vigor": 2,

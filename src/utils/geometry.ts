@@ -105,3 +105,22 @@ export function calculateSuccessProbability(
   // Success probability = intersection area / mission area
   return Math.min(intersectionArea / missionArea, 1.0);
 }
+
+// Calculate team success probability for a mission
+// Combines all team members' stats (taking max of each pillar) and calculates success rate
+export function calculateTeamSuccessProbability(
+  teamStats: StatPool[],
+  missionRequirements: StatPool,
+  maxValue: number = 10
+): number {
+  // If no team members, 0% success
+  if (teamStats.length === 0) {
+    return 0;
+  }
+
+  // Combine team stats (take maximum of each pillar)
+  const combinedStats = combineStats(...teamStats);
+
+  // Calculate success probability with combined stats
+  return calculateSuccessProbability(combinedStats, missionRequirements, maxValue);
+}
