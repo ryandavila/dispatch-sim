@@ -8,6 +8,7 @@ export interface Character {
   stats: StatPool;
   availablePoints: number;
   notes?: string;
+  tags?: string[];
 }
 
 // Helper functions

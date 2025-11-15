@@ -11,6 +11,7 @@
       "Intellect": 1
     },
     "availablePoints": 0,
+    "tags": ["Flight", "Combat", "Momentum"],
     "notes": "Flight. Great for combat right away. An ability that improves his stats when he succeeds."
   },
   {
@@ -25,6 +26,7 @@
       "Intellect": 3
     },
     "availablePoints": 0,
+    "tags": ["Flight", "Mobility", "Second Chance"],
     "notes": "Flight. High movement. An ability to reattempt failed calls."
   },
   {
@@ -39,6 +41,7 @@
       "Intellect": 1
     },
     "availablePoints": 0,
+    "tags": ["Tank", "Unkillable", "Rage"],
     "notes": "He can't be downed. He's better when injured."
   },
   {
@@ -53,6 +56,7 @@
       "Intellect": 2
     },
     "availablePoints": 0,
+    "tags": ["Charisma", "Duplicate", "Versatile"],
     "notes": "Good charisma right away. She can duplicate other characters."
   },
   {
@@ -67,6 +71,7 @@
       "Intellect": 2
     },
     "availablePoints": 0,
+    "tags": ["Stealth", "Solo", "Infiltrator"],
     "notes": "Well-rounded right away. She's great for solo missions."
   },
   {
@@ -81,6 +86,7 @@
       "Intellect": 4
     },
     "availablePoints": 0,
+    "tags": ["Intellect", "Shapeshifter", "Flight"],
     "notes": "Two forms, making him essentially two different characters (though you can't control the change). Flight (on occasion). He can reattempt failed calls."
   },
   {
@@ -95,6 +101,7 @@
       "Intellect": 2
     },
     "availablePoints": 0,
+    "tags": ["Support", "Healer", "Balanced"],
     "notes": "Great all-rounder. She can heal others."
   },
   {
@@ -109,6 +116,7 @@
       "Intellect": 1
     },
     "availablePoints": 0,
+    "tags": ["Tank", "Solo", "Durable"],
     "notes": "Easy to turn into an all-rounder. Great for solo missions."
   },
   {
@@ -123,6 +131,7 @@
       "Intellect": 1
     },
     "availablePoints": 0,
+    "tags": ["Flight", "Powerhouse", "Gambler"],
     "notes": "Flight and low rest time. Best starting stats. Fun gambling mechanic to spice things up."
   },
   {
@@ -137,6 +146,7 @@
       "Intellect": 2
     },
     "availablePoints": 0,
+    "tags": ["Support", "Healer", "Flexible"],
     "notes": "Easy to turn into whatever your team is lacking. He can heal others. Great as a secondary or tertiary character to improve the chances of success on tough calls."
   }
 ]

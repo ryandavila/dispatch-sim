@@ -23,6 +23,16 @@ export function CharacterCard({ character, onClick, isSelected = false }: Charac
         <span className="character-level">Level {character.level}</span>
       </div>
 
+      {character.tags && character.tags.length > 0 && (
+        <div className="character-card-tags">
+          {character.tags.map((tag) => (
+            <span key={tag} className="agent-tag">
+              {tag}
+            </span>
+          ))}
+        </div>
+      )}
+
       <div className="character-card-chart">
         <RadarChart stats={character.stats} maxValue={10} size={380} />
       </div>
