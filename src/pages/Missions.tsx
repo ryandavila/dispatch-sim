@@ -1,10 +1,9 @@
 import { useState } from 'react';
+import { OverlayRadarChart } from '../components/OverlayRadarChart';
 import type { Character } from '../types/character';
 import type { Mission } from '../types/mission';
 import { loadAgents, loadMissions } from '../utils/dataLoader';
-import { calculateTeamSuccessProbability } from '../utils/geometry';
-import { OverlayRadarChart } from '../components/OverlayRadarChart';
-import { combineStats } from '../utils/geometry';
+import { calculateTeamSuccessProbability, combineStats } from '../utils/geometry';
 
 export function Missions() {
   const missions = loadMissions();
@@ -68,10 +67,19 @@ export function Missions() {
         {/* Mission List */}
         <div className="missions-list">
           {missions.map((mission) => (
+            // biome-ignore lint/a11y/useSemanticElements: Card component, not a semantic button
             <div
               key={mission.id}
               className={`mission-card ${selectedMission?.id === mission.id ? 'selected' : ''}`}
               onClick={() => handleMissionSelect(mission)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleMissionSelect(mission);
+                }
+              }}
+              role="button"
+              tabIndex={0}
             >
               <div className="mission-card-header">
                 <h3>{mission.name}</h3>
@@ -153,10 +161,20 @@ export function Missions() {
                 const isAtLimit = selectedAgents.length >= selectedMission.maxAgents;
                 const isDisabled = isExcluded || (!isSelected && isAtLimit);
                 return (
+                  // biome-ignore lint/a11y/useSemanticElements: Card component, not a semantic button
                   <div
                     key={agent.id}
                     className={`agent-select-card ${isSelected ? 'selected' : ''} ${isDisabled ? 'disabled' : ''} ${isExcluded ? 'excluded' : ''}`}
                     onClick={() => !isExcluded && toggleAgentSelection(agent)}
+                    onKeyDown={(e) => {
+                      if (!isExcluded && (e.key === 'Enter' || e.key === ' ')) {
+                        e.preventDefault();
+                        toggleAgentSelection(agent);
+                      }
+                    }}
+                    role="button"
+                    tabIndex={isExcluded ? -1 : 0}
+                    aria-disabled={isDisabled}
                     title={isExcluded ? 'This agent cannot or refuses to do this mission' : ''}
                   >
                     <div className="agent-select-info">

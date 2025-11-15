@@ -11,9 +11,7 @@ export function Home() {
   const totalMissions = missions.length;
 
   // Count agents that aren't excluded from any mission
-  const allExcludedAgents = new Set(
-    missions.flatMap((mission) => mission.excludedAgents || [])
-  );
+  const allExcludedAgents = new Set(missions.flatMap((mission) => mission.excludedAgents || []));
   const availableAgents = agents.filter((agent) => !allExcludedAgents.has(agent.id)).length;
 
   return (

@@ -1,8 +1,8 @@
-import { Routes, Route, Link } from 'react-router-dom';
+import { Link, Route, Routes } from 'react-router-dom';
 import './App.css';
 import { Home } from './pages/Home';
-import { Roster } from './pages/Roster';
 import { Missions } from './pages/Missions';
+import { Roster } from './pages/Roster';
 
 function App() {
   return (

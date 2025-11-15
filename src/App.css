@@ -720,11 +720,6 @@
   transform: none;
 }
 
-.agent-select-card.excluded .agent-name {
-  text-decoration: line-through;
-  opacity: 0.6;
-}
-
 .agent-select-info {
   display: flex;
   flex-direction: column;
@@ -737,6 +732,11 @@
   font-size: 1rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+}
+
+.agent-select-card.excluded .agent-name {
+  text-decoration: line-through;
+  opacity: 0.6;
 }
 
 .agent-level {
@@ -823,7 +823,7 @@
 }
 
 .stat-card::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
