@@ -1,15 +1,18 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { OverlayRadarChart } from '../components/OverlayRadarChart';
 import type { Character } from '../types/character';
 import type { Mission } from '../types/mission';
 import { loadAgents, loadMissions } from '../utils/dataLoader';
 import { calculateTeamSuccessProbability, combineStats } from '../utils/geometry';
 
+type DifficultyFilter = Mission['difficulty'] | 'All';
+
 export function Missions() {
   const missions = loadMissions();
   const agents = loadAgents();
   const [selectedMission, setSelectedMission] = useState<Mission | null>(null);
   const [selectedAgents, setSelectedAgents] = useState<Character[]>([]);
+  const [difficultyFilter, setDifficultyFilter] = useState<DifficultyFilter>('All');
 
   const handleMissionSelect = (mission: Mission) => {
     setSelectedMission(mission);
@@ -31,6 +34,14 @@ export function Missions() {
       return [...prev, agent];
     });
   };
+
+  // Filter missions by difficulty
+  const filteredMissions = useMemo(() => {
+    if (difficultyFilter === 'All') {
+      return missions;
+    }
+    return missions.filter((mission) => mission.difficulty === difficultyFilter);
+  }, [missions, difficultyFilter]);
 
   const successProbability = selectedMission
     ? calculateTeamSuccessProbability(
@@ -63,133 +74,175 @@ export function Missions() {
     <div className="missions-page">
       <h2 className="missions-header">Available Missions</h2>
 
-      <div className="missions-layout">
-        {/* Mission List */}
-        <div className="missions-list">
-          {missions.map((mission) => (
-            // biome-ignore lint/a11y/useSemanticElements: Card component, not a semantic button
-            <div
-              key={mission.id}
-              className={`mission-card ${selectedMission?.id === mission.id ? 'selected' : ''}`}
-              onClick={() => handleMissionSelect(mission)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  handleMissionSelect(mission);
-                }
-              }}
-              role="button"
-              tabIndex={0}
+      {/* Difficulty Filter */}
+      <div className="mission-filters">
+        <div className="filter-group">
+          <span className="filter-label">Filter by Difficulty:</span>
+          <div className="difficulty-filters">
+            <button
+              type="button"
+              onClick={() => setDifficultyFilter('All')}
+              className={`difficulty-filter-button ${difficultyFilter === 'All' ? 'active' : ''}`}
             >
-              <div className="mission-card-header">
-                <h3>{mission.name}</h3>
-                <span
-                  className="mission-difficulty"
-                  style={{ color: getDifficultyColor(mission.difficulty) }}
-                >
-                  {mission.difficulty}
-                </span>
-              </div>
-              <p className="mission-description">{mission.description}</p>
-              <div className="mission-info">
-                <span className="mission-agents">Max Agents: {mission.maxAgents}</span>
-                {mission.rewards && <span>XP: {mission.rewards.experience}</span>}
-              </div>
-            </div>
-          ))}
+              All
+            </button>
+            <button
+              type="button"
+              onClick={() => setDifficultyFilter('Easy')}
+              className={`difficulty-filter-button ${difficultyFilter === 'Easy' ? 'active' : ''}`}
+            >
+              Easy
+            </button>
+            <button
+              type="button"
+              onClick={() => setDifficultyFilter('Medium')}
+              className={`difficulty-filter-button ${difficultyFilter === 'Medium' ? 'active' : ''}`}
+            >
+              Medium
+            </button>
+            <button
+              type="button"
+              onClick={() => setDifficultyFilter('Hard')}
+              className={`difficulty-filter-button ${difficultyFilter === 'Hard' ? 'active' : ''}`}
+            >
+              Hard
+            </button>
+            <button
+              type="button"
+              onClick={() => setDifficultyFilter('Extreme')}
+              className={`difficulty-filter-button ${difficultyFilter === 'Extreme' ? 'active' : ''}`}
+            >
+              Extreme
+            </button>
+          </div>
         </div>
+      </div>
 
-        {/* Mission Details & Team Selection */}
-        {selectedMission && (
-          <div className="mission-details">
-            <h3>Mission Requirements</h3>
-            <div className="mission-chart">
-              {selectedAgents.length > 0 ? (
-                <OverlayRadarChart
-                  layers={[
-                    {
-                      stats: selectedMission.requirements,
-                      color: 'rgba(217, 119, 6, 0.3)',
-                      label: 'Required',
-                      fillOpacity: 0.2,
-                    },
-                    {
-                      stats: combineStats(...selectedAgents.map((a) => a.stats)),
-                      color: 'rgba(20, 184, 166, 0.5)',
-                      label: 'Team',
-                      fillOpacity: 0.3,
-                    },
-                  ]}
-                  maxValue={10}
-                  size={300}
-                />
-              ) : (
-                <OverlayRadarChart
-                  layers={[
-                    {
-                      stats: selectedMission.requirements,
-                      color: 'rgba(217, 119, 6, 0.3)',
-                      label: 'Required',
-                      fillOpacity: 0.3,
-                    },
-                  ]}
-                  maxValue={10}
-                  size={300}
-                />
-              )}
-            </div>
-
-            {selectedAgents.length > 0 && (
-              <div
-                className="success-probability"
-                style={{ color: getSuccessColor(successProbability) }}
+      {/* Mission List */}
+      <div className="missions-list">
+        {filteredMissions.map((mission) => (
+          // biome-ignore lint/a11y/useSemanticElements: Card component, not a semantic button
+          <div
+            key={mission.id}
+            className={`mission-card ${selectedMission?.id === mission.id ? 'selected' : ''}`}
+            onClick={() => handleMissionSelect(mission)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                handleMissionSelect(mission);
+              }
+            }}
+            role="button"
+            tabIndex={0}
+          >
+            <div className="mission-card-header">
+              <h3>{mission.name}</h3>
+              <span
+                className="mission-difficulty"
+                style={{ color: getDifficultyColor(mission.difficulty) }}
               >
-                Success Probability: {(successProbability * 100).toFixed(0)}%
-              </div>
-            )}
-
-            <div className="team-header">
-              <h3>Select Team</h3>
-              <span className="team-count">
-                {selectedAgents.length}/{selectedMission.maxAgents}
+                {mission.difficulty}
               </span>
             </div>
-            <div className="agent-selection">
-              {agents.map((agent) => {
-                const isSelected = selectedAgents.some((a) => a.id === agent.id);
-                const isExcluded = selectedMission.excludedAgents?.includes(agent.id) ?? false;
-                const isAtLimit = selectedAgents.length >= selectedMission.maxAgents;
-                const isDisabled = isExcluded || (!isSelected && isAtLimit);
-                return (
-                  // biome-ignore lint/a11y/useSemanticElements: Card component, not a semantic button
-                  <div
-                    key={agent.id}
-                    className={`agent-select-card ${isSelected ? 'selected' : ''} ${isDisabled ? 'disabled' : ''} ${isExcluded ? 'excluded' : ''}`}
-                    onClick={() => !isExcluded && toggleAgentSelection(agent)}
-                    onKeyDown={(e) => {
-                      if (!isExcluded && (e.key === 'Enter' || e.key === ' ')) {
-                        e.preventDefault();
-                        toggleAgentSelection(agent);
-                      }
-                    }}
-                    role="button"
-                    tabIndex={isExcluded ? -1 : 0}
-                    aria-disabled={isDisabled}
-                    title={isExcluded ? 'This agent cannot or refuses to do this mission' : ''}
-                  >
-                    <div className="agent-select-info">
-                      <span className="agent-name">{agent.name}</span>
-                      <span className="agent-level">Lvl {agent.level}</span>
-                    </div>
-                    {isSelected && <span className="checkmark">✓</span>}
-                    {isExcluded && <span className="excluded-badge">✗</span>}
-                  </div>
-                );
-              })}
+            <p className="mission-description">{mission.description}</p>
+            <div className="mission-info">
+              <span className="mission-agents">Max Agents: {mission.maxAgents}</span>
+              {mission.rewards && <span>XP: {mission.rewards.experience}</span>}
             </div>
           </div>
-        )}
+        ))}
       </div>
+
+      {/* Mission Details & Team Selection */}
+      {selectedMission && (
+        <div className="mission-details">
+          <h3>Mission Requirements</h3>
+          <div className="mission-chart">
+            {selectedAgents.length > 0 ? (
+              <OverlayRadarChart
+                layers={[
+                  {
+                    stats: selectedMission.requirements,
+                    color: 'rgba(217, 119, 6, 0.3)',
+                    label: 'Required',
+                    fillOpacity: 0.2,
+                  },
+                  {
+                    stats: combineStats(...selectedAgents.map((a) => a.stats)),
+                    color: 'rgba(20, 184, 166, 0.5)',
+                    label: 'Team',
+                    fillOpacity: 0.3,
+                  },
+                ]}
+                maxValue={10}
+                size={300}
+              />
+            ) : (
+              <OverlayRadarChart
+                layers={[
+                  {
+                    stats: selectedMission.requirements,
+                    color: 'rgba(217, 119, 6, 0.3)',
+                    label: 'Required',
+                    fillOpacity: 0.3,
+                  },
+                ]}
+                maxValue={10}
+                size={300}
+              />
+            )}
+          </div>
+
+          {selectedAgents.length > 0 && (
+            <div
+              className="success-probability"
+              style={{ color: getSuccessColor(successProbability) }}
+            >
+              Success Probability: {(successProbability * 100).toFixed(0)}%
+            </div>
+          )}
+
+          <div className="team-header">
+            <h3>Select Team</h3>
+            <span className="team-count">
+              {selectedAgents.length}/{selectedMission.maxAgents}
+            </span>
+          </div>
+          <div className="agent-selection">
+            {agents.map((agent) => {
+              const isSelected = selectedAgents.some((a) => a.id === agent.id);
+              const isExcluded = selectedMission.excludedAgents?.includes(agent.id) ?? false;
+              const isAtLimit = selectedAgents.length >= selectedMission.maxAgents;
+              const isDisabled = isExcluded || (!isSelected && isAtLimit);
+              return (
+                // biome-ignore lint/a11y/useSemanticElements: Card component, not a semantic button
+                <div
+                  key={agent.id}
+                  className={`agent-select-card ${isSelected ? 'selected' : ''} ${isDisabled ? 'disabled' : ''} ${isExcluded ? 'excluded' : ''}`}
+                  onClick={() => !isExcluded && toggleAgentSelection(agent)}
+                  onKeyDown={(e) => {
+                    if (!isExcluded && (e.key === 'Enter' || e.key === ' ')) {
+                      e.preventDefault();
+                      toggleAgentSelection(agent);
+                    }
+                  }}
+                  role="button"
+                  tabIndex={isExcluded ? -1 : 0}
+                  aria-disabled={isDisabled}
+                  title={isExcluded ? 'This agent cannot or refuses to do this mission' : ''}
+                >
+                  <div className="agent-select-info">
+                    <span className="agent-name">{agent.name}</span>
+                    <span className="agent-level">Lvl {agent.level}</span>
+                  </div>
+                  {isSelected && <span className="checkmark">✓</span>}
+                  {isExcluded && <span className="excluded-badge">✗</span>}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
