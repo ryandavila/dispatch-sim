@@ -1,0 +1,142 @@
+[
+  {
+    "id": "flambae",
+    "name": "Flambae",
+    "level": 1,
+    "stats": {
+      "Combat": 4,
+      "Vigor": 2,
+      "Mobility": 3,
+      "Charisma": 2,
+      "Intellect": 1
+    },
+    "availablePoints": 0,
+    "notes": "Flight. Great for combat right away. An ability that improves his stats when he succeeds."
+  },
+  {
+    "id": "coupe",
+    "name": "Coupé",
+    "level": 1,
+    "stats": {
+      "Combat": 4,
+      "Vigor": 1,
+      "Mobility": 3,
+      "Charisma": 1,
+      "Intellect": 3
+    },
+    "availablePoints": 0,
+    "notes": "Flight. High movement. An ability to reattempt failed calls."
+  },
+  {
+    "id": "punch-up",
+    "name": "Punch Up",
+    "level": 1,
+    "stats": {
+      "Combat": 3,
+      "Vigor": 4,
+      "Mobility": 1,
+      "Charisma": 3,
+      "Intellect": 1
+    },
+    "availablePoints": 0,
+    "notes": "He can't be downed. He's better when injured."
+  },
+  {
+    "id": "prism",
+    "name": "Prism",
+    "level": 1,
+    "stats": {
+      "Combat": 4,
+      "Vigor": 1,
+      "Mobility": 1,
+      "Charisma": 4,
+      "Intellect": 2
+    },
+    "availablePoints": 0,
+    "notes": "Good charisma right away. She can duplicate other characters."
+  },
+  {
+    "id": "invisigal",
+    "name": "Invisigal",
+    "level": 1,
+    "stats": {
+      "Combat": 2,
+      "Vigor": 2,
+      "Mobility": 3,
+      "Charisma": 1,
+      "Intellect": 2
+    },
+    "availablePoints": 0,
+    "notes": "Well-rounded right away. She's great for solo missions."
+  },
+  {
+    "id": "sonar",
+    "name": "Sonar",
+    "level": 1,
+    "stats": {
+      "Combat": 2,
+      "Vigor": 1,
+      "Mobility": 2,
+      "Charisma": 3,
+      "Intellect": 4
+    },
+    "availablePoints": 0,
+    "notes": "Two forms, making him essentially two different characters (though you can't control the change). Flight (on occasion). He can reattempt failed calls."
+  },
+  {
+    "id": "malevola",
+    "name": "Malevola",
+    "level": 1,
+    "stats": {
+      "Combat": 2,
+      "Vigor": 2,
+      "Mobility": 2,
+      "Charisma": 3,
+      "Intellect": 2
+    },
+    "availablePoints": 0,
+    "notes": "Great all-rounder. She can heal others."
+  },
+  {
+    "id": "golem",
+    "name": "Golem",
+    "level": 1,
+    "stats": {
+      "Combat": 3,
+      "Vigor": 4,
+      "Mobility": 2,
+      "Charisma": 2,
+      "Intellect": 1
+    },
+    "availablePoints": 0,
+    "notes": "Easy to turn into an all-rounder. Great for solo missions."
+  },
+  {
+    "id": "phenomaman",
+    "name": "Phenomaman",
+    "level": 1,
+    "stats": {
+      "Combat": 7,
+      "Vigor": 7,
+      "Mobility": 6,
+      "Charisma": 2,
+      "Intellect": 1
+    },
+    "availablePoints": 0,
+    "notes": "Flight and low rest time. Best starting stats. Fun gambling mechanic to spice things up."
+  },
+  {
+    "id": "waterboy",
+    "name": "Waterboy",
+    "level": 1,
+    "stats": {
+      "Combat": 1,
+      "Vigor": 2,
+      "Mobility": 2,
+      "Charisma": 1,
+      "Intellect": 2
+    },
+    "availablePoints": 0,
+    "notes": "Easy to turn into whatever your team is lacking. He can heal others. Great as a secondary or tertiary character to improve the chances of success on tough calls."
+  }
+]

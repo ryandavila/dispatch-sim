@@ -1,0 +1,82 @@
+[
+  {
+    "id": "mission-recon",
+    "name": "Reconnaissance",
+    "description": "Gather intel on enemy positions without being detected",
+    "difficulty": "Easy",
+    "requirements": {
+      "Combat": 1,
+      "Vigor": 1,
+      "Mobility": 2,
+      "Charisma": 1,
+      "Intellect": 2
+    },
+    "rewards": {
+      "experience": 100
+    }
+  },
+  {
+    "id": "mission-negotiation",
+    "name": "Hostage Negotiation",
+    "description": "Negotiate the release of hostages from armed captors",
+    "difficulty": "Medium",
+    "requirements": {
+      "Combat": 2,
+      "Vigor": 2,
+      "Mobility": 1,
+      "Charisma": 4,
+      "Intellect": 3
+    },
+    "rewards": {
+      "experience": 250
+    }
+  },
+  {
+    "id": "mission-extraction",
+    "name": "Hot Extraction",
+    "description": "Extract VIP from hostile territory under enemy fire",
+    "difficulty": "Hard",
+    "requirements": {
+      "Combat": 4,
+      "Vigor": 3,
+      "Mobility": 4,
+      "Charisma": 2,
+      "Intellect": 2
+    },
+    "rewards": {
+      "experience": 500
+    }
+  },
+  {
+    "id": "mission-infiltration",
+    "name": "Deep Cover Infiltration",
+    "description": "Infiltrate enemy organization and maintain cover for extended operation",
+    "difficulty": "Extreme",
+    "requirements": {
+      "Combat": 3,
+      "Vigor": 4,
+      "Mobility": 3,
+      "Charisma": 5,
+      "Intellect": 5
+    },
+    "rewards": {
+      "experience": 1000
+    }
+  },
+  {
+    "id": "mission-courier",
+    "name": "Courier Run",
+    "description": "Deliver sensitive documents across the city quickly and safely",
+    "difficulty": "Easy",
+    "requirements": {
+      "Combat": 1,
+      "Vigor": 2,
+      "Mobility": 3,
+      "Charisma": 1,
+      "Intellect": 1
+    },
+    "rewards": {
+      "experience": 75
+    }
+  }
+]

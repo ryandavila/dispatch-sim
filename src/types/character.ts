@@ -7,6 +7,7 @@ export interface Character {
   level: number;
   stats: StatPool;
   availablePoints: number;
+  notes?: string;
 }
 
 // Helper functions
