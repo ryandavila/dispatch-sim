@@ -563,6 +563,7 @@
   line-height: 1.5;
   color: #3d3426;
   font-weight: 500;
+  white-space: pre-line;
 }
 
 .character-card-points {
