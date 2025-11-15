@@ -1,24 +1,52 @@
 import { Link } from 'react-router-dom';
+import { loadAgents, loadMissions } from '../utils/dataLoader';
 
 export function Home() {
+  const agents = loadAgents();
+  const missions = loadMissions();
+
+  // Calculate stats
+  const totalAgents = agents.length;
+  const averageLevel = agents.reduce((sum, agent) => sum + agent.level, 0) / totalAgents;
+  const totalMissions = missions.length;
+
+  // Count agents that aren't excluded from any mission
+  const allExcludedAgents = new Set(
+    missions.flatMap((mission) => mission.excludedAgents || [])
+  );
+  const availableAgents = agents.filter((agent) => !allExcludedAgents.has(agent.id)).length;
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-8rem)] gap-8">
-      <div className="text-center space-y-4">
-        <h2 className="text-4xl font-bold">Welcome to Dispatch</h2>
-        <p className="text-xl text-gray-400">Manage your team of reformed villains</p>
+    <div className="home-page">
+      <div className="home-header">
+        <h2>Welcome to Dispatch</h2>
+        <p>Manage your team of reformed villains</p>
       </div>
 
-      <nav className="flex flex-col gap-4">
-        <Link
-          to="/roster"
-          className="px-8 py-4 bg-blue-600 hover:bg-blue-700 rounded-lg text-lg font-semibold transition-colors"
-        >
+      <div className="dashboard-stats">
+        <div className="stat-card">
+          <div className="stat-value">{totalAgents}</div>
+          <div className="stat-label">Total Agents</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-value">{averageLevel.toFixed(1)}</div>
+          <div className="stat-label">Average Level</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-value">{totalMissions}</div>
+          <div className="stat-label">Active Missions</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-value">{availableAgents}</div>
+          <div className="stat-label">Always Available</div>
+        </div>
+      </div>
+
+      <nav className="home-nav">
+        <Link to="/roster" className="home-nav-button">
           View Roster
         </Link>
-        <Link
-          to="/missions"
-          className="px-8 py-4 bg-amber-600 hover:bg-amber-700 rounded-lg text-lg font-semibold transition-colors"
-        >
+        <Link to="/missions" className="home-nav-button">
           View Missions
         </Link>
       </nav>
