@@ -34,7 +34,11 @@ function createTestAgent(
 }
 
 // Helper function to create test mission
-function createTestMission(travelTime: number, missionDuration: number): Mission {
+function createTestMission(
+  travelTime: number,
+  missionDuration: number,
+  restTime: number = 5
+): Mission {
   return {
     id: 'test-mission',
     name: 'Test Mission',
@@ -50,6 +54,7 @@ function createTestMission(travelTime: number, missionDuration: number): Mission
     },
     travelTime,
     missionDuration,
+    restTime,
   };
 }
 
@@ -135,8 +140,8 @@ describe('Mission Time Calculations', () => {
       const agent = createTestAgent('1', 'Solo', false, false);
       const totalTime = calculateTotalMissionTime(mission, [agent]);
 
-      // 10 (outbound) + 20 (mission) + 10 (return) = 40
-      expect(totalTime).toBe(40);
+      // 10 (outbound) + 20 (mission) + 10 (return) + 5 (rest) = 45
+      expect(totalTime).toBe(45);
     });
 
     it('should use slowest agent time for mixed team', () => {
@@ -146,8 +151,8 @@ describe('Mission Time Calculations', () => {
 
       const totalTime = calculateTotalMissionTime(mission, [slowAgent, fastAgent]);
 
-      // 10 (slowest outbound) + 20 (mission) + 10 (slowest return) = 40
-      expect(totalTime).toBe(40);
+      // 10 (slowest outbound) + 20 (mission) + 10 (slowest return) + 5 (rest) = 45
+      expect(totalTime).toBe(45);
     });
 
     it('should calculate reduced time when all agents are licensed flyers', () => {
@@ -157,8 +162,8 @@ describe('Mission Time Calculations', () => {
 
       const totalTime = calculateTotalMissionTime(mission, [flyer1, flyer2]);
 
-      // 5 (outbound) + 20 (mission) + 5 (return) = 30
-      expect(totalTime).toBe(30);
+      // 5 (outbound) + 20 (mission) + 5 (return) + 5 (rest) = 35
+      expect(totalTime).toBe(35);
     });
 
     it('should handle zero mission duration', () => {
@@ -166,8 +171,8 @@ describe('Mission Time Calculations', () => {
       const agent = createTestAgent('1', 'Agent', false, false);
       const totalTime = calculateTotalMissionTime(mission, [agent]);
 
-      // 10 (outbound) + 0 (mission) + 10 (return) = 20
-      expect(totalTime).toBe(20);
+      // 10 (outbound) + 0 (mission) + 10 (return) + 5 (rest) = 25
+      expect(totalTime).toBe(25);
     });
   });
 
@@ -179,6 +184,7 @@ describe('Mission Time Calculations', () => {
       expect(breakdown.travelTimeOutbound).toBe(0);
       expect(breakdown.travelTimeReturn).toBe(0);
       expect(breakdown.missionDuration).toBe(20);
+      expect(breakdown.restTime).toBe(5);
       expect(breakdown.totalTime).toBe(0);
       expect(breakdown.hasFastTravelers).toBe(false);
     });
@@ -191,7 +197,8 @@ describe('Mission Time Calculations', () => {
       expect(breakdown.travelTimeOutbound).toBe(10);
       expect(breakdown.travelTimeReturn).toBe(10);
       expect(breakdown.missionDuration).toBe(20);
-      expect(breakdown.totalTime).toBe(40);
+      expect(breakdown.restTime).toBe(5);
+      expect(breakdown.totalTime).toBe(45);
       expect(breakdown.hasFastTravelers).toBe(false);
       expect(breakdown.slowestTravelTime).toBe(10);
       expect(breakdown.fastestTravelTime).toBe(10);
@@ -207,7 +214,7 @@ describe('Mission Time Calculations', () => {
       expect(breakdown.hasFastTravelers).toBe(true);
       expect(breakdown.slowestTravelTime).toBe(10);
       expect(breakdown.fastestTravelTime).toBe(5);
-      expect(breakdown.totalTime).toBe(40); // Based on slowest
+      expect(breakdown.totalTime).toBe(45); // Based on slowest + rest
     });
 
     it('should include agent travel times in breakdown', () => {
@@ -242,7 +249,7 @@ describe('Mission Time Calculations', () => {
       const agent = createTestAgent('1', 'Agent', false, false);
       const totalTime = calculateTotalMissionTime(mission, [agent]);
 
-      expect(totalTime).toBe(2500); // 1000 + 500 + 1000
+      expect(totalTime).toBe(2505); // 1000 + 500 + 1000 + 5
     });
 
     it('should handle team with only unlicensed flyers', () => {
@@ -253,7 +260,7 @@ describe('Mission Time Calculations', () => {
       const breakdown = getMissionTimeBreakdown(mission, [flyer1, flyer2]);
 
       expect(breakdown.hasFastTravelers).toBe(false);
-      expect(breakdown.totalTime).toBe(40); // No speed bonus
+      expect(breakdown.totalTime).toBe(45); // No speed bonus, but with rest
     });
 
     it('should handle team with mix of licensed and unlicensed flyers', () => {

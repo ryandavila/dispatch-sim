@@ -23,11 +23,11 @@ export function calculateAgentTravelTime(baseTravelTime: number, agent: Characte
 /**
  * Calculate the total mission time for a team
  * The mission begins once all agents arrive (slowest travel time)
- * Total time = (longest travel time * 2 for round trip) + mission duration
+ * Total time = (longest travel time * 2 for round trip) + mission duration + rest time
  *
  * @param mission - The mission being undertaken
  * @param agents - The team of agents assigned to the mission
- * @returns Total time for the mission including travel
+ * @returns Total time for the mission including travel and rest
  */
 export function calculateTotalMissionTime(mission: Mission, agents: Character[]): number {
   if (agents.length === 0) {
@@ -40,8 +40,8 @@ export function calculateTotalMissionTime(mission: Mission, agents: Character[])
   // Mission starts when the slowest agent arrives
   const longestTravelTime = Math.max(...travelTimes);
 
-  // Total time = round trip + mission duration
-  return longestTravelTime * 2 + mission.missionDuration;
+  // Total time = round trip + mission duration + rest time
+  return longestTravelTime * 2 + mission.missionDuration + mission.restTime;
 }
 
 /**
@@ -71,6 +71,7 @@ export function getMissionTimeBreakdown(mission: Mission, agents: Character[]) {
       travelTimeOutbound: 0,
       travelTimeReturn: 0,
       missionDuration: mission.missionDuration,
+      restTime: mission.restTime,
       totalTime: 0,
       hasFastTravelers: false,
       slowestTravelTime: 0,
@@ -90,7 +91,8 @@ export function getMissionTimeBreakdown(mission: Mission, agents: Character[]) {
     travelTimeOutbound: slowestTravelTime,
     travelTimeReturn: slowestTravelTime,
     missionDuration: mission.missionDuration,
-    totalTime: slowestTravelTime * 2 + mission.missionDuration,
+    restTime: mission.restTime,
+    totalTime: slowestTravelTime * 2 + mission.missionDuration + mission.restTime,
     hasFastTravelers,
     slowestTravelTime,
     fastestTravelTime,

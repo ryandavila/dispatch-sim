@@ -155,7 +155,8 @@ export function Missions() {
               <span className="mission-agents">Max Agents: {mission.maxAgents}</span>
               {mission.rewards && <span>XP: {mission.rewards.experience}</span>}
               <span className="mission-time">
-                Travel: {mission.travelTime} | Duration: {mission.missionDuration}
+                Travel: {mission.travelTime} | Duration: {mission.missionDuration} | Rest:{' '}
+                {mission.restTime}
               </span>
             </div>
           </div>
@@ -226,6 +227,10 @@ export function Missions() {
                     <div className="time-row">
                       <span className="time-label">Travel (Return):</span>
                       <span className="time-value">{missionTimeBreakdown.travelTimeReturn}</span>
+                    </div>
+                    <div className="time-row">
+                      <span className="time-label">Rest Time:</span>
+                      <span className="time-value">{missionTimeBreakdown.restTime}</span>
                     </div>
                     <div className="time-row total-time">
                       <span className="time-label">Total Time:</span>
