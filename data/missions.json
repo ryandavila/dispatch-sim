@@ -15,7 +15,9 @@
     },
     "rewards": {
       "experience": 100
-    }
+    },
+    "travelTime": 2,
+    "missionDuration": 4
   },
   {
     "id": "mission-negotiation",
@@ -33,7 +35,9 @@
     },
     "rewards": {
       "experience": 250
-    }
+    },
+    "travelTime": 3,
+    "missionDuration": 6
   },
   {
     "id": "mission-extraction",
@@ -50,7 +54,9 @@
     },
     "rewards": {
       "experience": 500
-    }
+    },
+    "travelTime": 4,
+    "missionDuration": 8
   },
   {
     "id": "mission-infiltration",
@@ -68,7 +74,9 @@
     },
     "rewards": {
       "experience": 1000
-    }
+    },
+    "travelTime": 6,
+    "missionDuration": 12
   },
   {
     "id": "mission-courier",
@@ -86,6 +94,8 @@
     },
     "rewards": {
       "experience": 75
-    }
+    },
+    "travelTime": 1,
+    "missionDuration": 3
   }
 ]

@@ -9,6 +9,8 @@ export interface Character {
   availablePoints: number;
   notes?: string;
   tags?: string[];
+  canFly: boolean;
+  isFlightLicensed: boolean;
 }
 
 // Helper functions
@@ -45,5 +47,7 @@ export function createCharacter(name: string, level: number = 1): Character {
     level,
     stats: createBaseStats(),
     availablePoints: STARTING_BONUS_POINTS + (level - 1) * POINTS_PER_LEVEL,
+    canFly: false,
+    isFlightLicensed: false,
   };
 }

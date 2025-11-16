@@ -933,6 +933,88 @@
   font-weight: 700;
 }
 
+.flight-badge {
+  margin-left: 0.5rem;
+  font-size: 0.9rem;
+}
+
+/* Mission Time Breakdown */
+.mission-time-breakdown {
+  background: rgba(107, 93, 72, 0.1);
+  border: 2px solid rgba(138, 122, 94, 0.3);
+  border-radius: 4px;
+  padding: 1rem 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.mission-time-breakdown h4 {
+  margin: 0 0 1rem 0;
+  color: #2a2419;
+  font-size: 1rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.time-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.time-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+}
+
+.time-row.total-time {
+  border-top: 2px solid rgba(138, 122, 94, 0.4);
+  margin-top: 0.5rem;
+  padding-top: 1rem;
+  font-weight: 700;
+}
+
+.time-label {
+  color: #3d3426;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.time-row.total-time .time-label {
+  color: #2a2419;
+  font-weight: 800;
+  font-size: 1rem;
+  text-transform: uppercase;
+}
+
+.time-value {
+  color: #14b8a6;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.time-row.total-time .time-value {
+  font-size: 1.2rem;
+}
+
+.time-note {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  background: rgba(20, 184, 166, 0.1);
+  border-left: 3px solid #14b8a6;
+  border-radius: 4px;
+  color: #0f766e;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.mission-time {
+  color: #6b5d48;
+  font-size: 0.85rem;
+}
+
 /* Home Page */
 .home-page {
   max-width: 1200px;

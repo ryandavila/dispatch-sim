@@ -11,6 +11,8 @@ export interface Mission {
   rewards?: {
     experience: number;
   };
+  travelTime: number; // Time units for one-way travel
+  missionDuration: number; // Time units for mission completion
 }
 
 export function createMission(
@@ -19,6 +21,8 @@ export function createMission(
   requirements: StatPool,
   difficulty: Mission['difficulty'] = 'Medium',
   maxAgents: number = 2,
+  travelTime: number = 5,
+  missionDuration: number = 10,
   excludedAgents?: string[]
 ): Mission {
   return {
@@ -29,5 +33,7 @@ export function createMission(
     difficulty,
     maxAgents,
     excludedAgents,
+    travelTime,
+    missionDuration,
   };
 }

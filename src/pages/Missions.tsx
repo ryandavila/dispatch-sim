@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react';
+import { AgentSelectCard } from '../components/AgentSelectCard';
 import { OverlayRadarChart } from '../components/OverlayRadarChart';
 import type { Character } from '../types/character';
 import type { Mission } from '../types/mission';
 import { loadAgents, loadMissions } from '../utils/dataLoader';
 import { calculateTeamSuccessProbability, combineStats } from '../utils/geometry';
+import { getMissionTimeBreakdown } from '../utils/missionTime';
 
 type DifficultyFilter = Mission['difficulty'] | 'All';
 
@@ -49,6 +51,10 @@ export function Missions() {
         selectedMission.requirements
       )
     : 0;
+
+  const missionTimeBreakdown = selectedMission
+    ? getMissionTimeBreakdown(selectedMission, selectedAgents)
+    : null;
 
   const getDifficultyColor = (difficulty: Mission['difficulty']) => {
     switch (difficulty) {
@@ -148,6 +154,9 @@ export function Missions() {
             <div className="mission-info">
               <span className="mission-agents">Max Agents: {mission.maxAgents}</span>
               {mission.rewards && <span>XP: {mission.rewards.experience}</span>}
+              <span className="mission-time">
+                Travel: {mission.travelTime} | Duration: {mission.missionDuration}
+              </span>
             </div>
           </div>
         ))}
@@ -194,12 +203,43 @@ export function Missions() {
           </div>
 
           {selectedAgents.length > 0 && (
-            <div
-              className="success-probability"
-              style={{ color: getSuccessColor(successProbability) }}
-            >
-              Success Probability: {(successProbability * 100).toFixed(0)}%
-            </div>
+            <>
+              <div
+                className="success-probability"
+                style={{ color: getSuccessColor(successProbability) }}
+              >
+                Success Probability: {(successProbability * 100).toFixed(0)}%
+              </div>
+
+              {missionTimeBreakdown && missionTimeBreakdown.totalTime > 0 && (
+                <div className="mission-time-breakdown">
+                  <h4>Mission Timeline</h4>
+                  <div className="time-details">
+                    <div className="time-row">
+                      <span className="time-label">Travel (Outbound):</span>
+                      <span className="time-value">{missionTimeBreakdown.travelTimeOutbound}</span>
+                    </div>
+                    <div className="time-row">
+                      <span className="time-label">Mission Duration:</span>
+                      <span className="time-value">{missionTimeBreakdown.missionDuration}</span>
+                    </div>
+                    <div className="time-row">
+                      <span className="time-label">Travel (Return):</span>
+                      <span className="time-value">{missionTimeBreakdown.travelTimeReturn}</span>
+                    </div>
+                    <div className="time-row total-time">
+                      <span className="time-label">Total Time:</span>
+                      <span className="time-value">{missionTimeBreakdown.totalTime}</span>
+                    </div>
+                    {missionTimeBreakdown.hasFastTravelers && (
+                      <div className="time-note">
+                        Some agents can travel faster due to flight license
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </>
           )}
 
           <div className="team-header">
@@ -215,29 +255,14 @@ export function Missions() {
               const isAtLimit = selectedAgents.length >= selectedMission.maxAgents;
               const isDisabled = isExcluded || (!isSelected && isAtLimit);
               return (
-                // biome-ignore lint/a11y/useSemanticElements: Card component, not a semantic button
-                <div
+                <AgentSelectCard
                   key={agent.id}
-                  className={`agent-select-card ${isSelected ? 'selected' : ''} ${isDisabled ? 'disabled' : ''} ${isExcluded ? 'excluded' : ''}`}
-                  onClick={() => !isExcluded && toggleAgentSelection(agent)}
-                  onKeyDown={(e) => {
-                    if (!isExcluded && (e.key === 'Enter' || e.key === ' ')) {
-                      e.preventDefault();
-                      toggleAgentSelection(agent);
-                    }
-                  }}
-                  role="button"
-                  tabIndex={isExcluded ? -1 : 0}
-                  aria-disabled={isDisabled}
-                  title={isExcluded ? 'This agent cannot or refuses to do this mission' : ''}
-                >
-                  <div className="agent-select-info">
-                    <span className="agent-name">{agent.name}</span>
-                    <span className="agent-level">Lvl {agent.level}</span>
-                  </div>
-                  {isSelected && <span className="checkmark">✓</span>}
-                  {isExcluded && <span className="excluded-badge">✗</span>}
-                </div>
+                  agent={agent}
+                  isSelected={isSelected}
+                  isExcluded={isExcluded}
+                  isDisabled={isDisabled}
+                  onToggle={toggleAgentSelection}
+                />
               );
             })}
           </div>
