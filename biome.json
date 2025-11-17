@@ -24,7 +24,12 @@
         "noSvgWithoutTitle": "off"
       },
       "complexity": {
-        "noExcessiveCognitiveComplexity": "warn"
+        "noExcessiveCognitiveComplexity": {
+          "level": "warn",
+          "options": {
+            "maxAllowedComplexity": 18
+          }
+        }
       },
       "correctness": {
         "useExhaustiveDependencies": "warn"

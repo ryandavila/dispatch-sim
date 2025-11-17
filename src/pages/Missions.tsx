@@ -1,13 +1,20 @@
-import { useMemo, useState } from 'react';
-import { AgentSelectCard } from '../components/AgentSelectCard';
-import { OverlayRadarChart } from '../components/OverlayRadarChart';
+import { useCallback, useMemo, useState } from 'react';
+import { ActiveMissionsSection } from '../components/ActiveMissionsSection';
+import { CompletedMissionsSection } from '../components/CompletedMissionsSection';
+import { MissionDetailsSection } from '../components/MissionDetailsSection';
+import { MissionHistorySection } from '../components/MissionHistorySection';
+import { MissionList } from '../components/MissionList';
+import { useActiveMissions } from '../hooks/useActiveMissions';
+import { useUserProgress } from '../hooks/useUserProgress';
 import type { Character } from '../types/character';
 import type { Mission } from '../types/mission';
 import { loadAgents, loadMissions } from '../utils/dataLoader';
-import { calculateTeamSuccessProbability, combineStats } from '../utils/geometry';
+import { calculateTeamSuccessProbability } from '../utils/geometry';
 import { getMissionTimeBreakdown } from '../utils/missionTime';
 
 type DifficultyFilter = Mission['difficulty'] | 'All';
+
+type MissionTab = 'available' | 'history';
 
 export function Missions() {
   const missions = loadMissions();
@@ -15,6 +22,24 @@ export function Missions() {
   const [selectedMission, setSelectedMission] = useState<Mission | null>(null);
   const [selectedAgents, setSelectedAgents] = useState<Character[]>([]);
   const [difficultyFilter, setDifficultyFilter] = useState<DifficultyFilter>('All');
+  const [activeTab, setActiveTab] = useState<MissionTab>('available');
+  const { userProgress, addMissionCompletion, isMissionCompleted } = useUserProgress();
+
+  const handleMissionComplete = useCallback(
+    (activeMission: import('../types/activeMission').ActiveMission) => {
+      const experienceGained = activeMission.mission.rewards?.experience || 0;
+      addMissionCompletion({
+        missionId: activeMission.mission.id,
+        completedAt: Date.now(),
+        agents: activeMission.agents.map((a) => a.id),
+        experienceGained,
+      });
+    },
+    [addMissionCompletion]
+  );
+
+  const { activeMissions, completedMissions, currentTime, deployMission, isAgentAvailable } =
+    useActiveMissions({ onMissionComplete: handleMissionComplete });
 
   const handleMissionSelect = (mission: Mission) => {
     setSelectedMission(mission);
@@ -37,13 +62,23 @@ export function Missions() {
     });
   };
 
-  // Filter missions by difficulty
+  const handleDeployMission = () => {
+    if (!selectedMission || selectedAgents.length === 0) return;
+
+    deployMission(selectedMission, selectedAgents);
+    setSelectedAgents([]);
+  };
+
+  // Filter missions by difficulty and exclude completed missions
   const filteredMissions = useMemo(() => {
-    if (difficultyFilter === 'All') {
-      return missions;
+    let filtered = missions.filter((mission) => !isMissionCompleted(mission.id));
+
+    if (difficultyFilter !== 'All') {
+      filtered = filtered.filter((mission) => mission.difficulty === difficultyFilter);
     }
-    return missions.filter((mission) => mission.difficulty === difficultyFilter);
-  }, [missions, difficultyFilter]);
+
+    return filtered;
+  }, [missions, difficultyFilter, isMissionCompleted]);
 
   const successProbability = selectedMission
     ? calculateTeamSuccessProbability(
@@ -78,202 +113,109 @@ export function Missions() {
 
   return (
     <div className="missions-page">
-      <h2 className="missions-header">Available Missions</h2>
-
-      {/* Difficulty Filter */}
-      <div className="mission-filters">
-        <div className="filter-group">
-          <span className="filter-label">Filter by Difficulty:</span>
-          <div className="difficulty-filters">
-            <button
-              type="button"
-              onClick={() => setDifficultyFilter('All')}
-              className={`difficulty-filter-button ${difficultyFilter === 'All' ? 'active' : ''}`}
-            >
-              All
-            </button>
-            <button
-              type="button"
-              onClick={() => setDifficultyFilter('Easy')}
-              className={`difficulty-filter-button ${difficultyFilter === 'Easy' ? 'active' : ''}`}
-            >
-              Easy
-            </button>
-            <button
-              type="button"
-              onClick={() => setDifficultyFilter('Medium')}
-              className={`difficulty-filter-button ${difficultyFilter === 'Medium' ? 'active' : ''}`}
-            >
-              Medium
-            </button>
-            <button
-              type="button"
-              onClick={() => setDifficultyFilter('Hard')}
-              className={`difficulty-filter-button ${difficultyFilter === 'Hard' ? 'active' : ''}`}
-            >
-              Hard
-            </button>
-            <button
-              type="button"
-              onClick={() => setDifficultyFilter('Extreme')}
-              className={`difficulty-filter-button ${difficultyFilter === 'Extreme' ? 'active' : ''}`}
-            >
-              Extreme
-            </button>
-          </div>
+      <div className="missions-page-header">
+        <h2 className="missions-header">Missions</h2>
+        <div className="user-xp">
+          <span className="xp-label">Total XP:</span>
+          <span className="xp-value">{userProgress.totalExperience}</span>
         </div>
       </div>
 
-      {/* Mission List */}
-      <div className="missions-list">
-        {filteredMissions.map((mission) => (
-          // biome-ignore lint/a11y/useSemanticElements: Card component, not a semantic button
-          <div
-            key={mission.id}
-            className={`mission-card ${selectedMission?.id === mission.id ? 'selected' : ''}`}
-            onClick={() => handleMissionSelect(mission)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                handleMissionSelect(mission);
-              }
-            }}
-            role="button"
-            tabIndex={0}
-          >
-            <div className="mission-card-header">
-              <h3>{mission.name}</h3>
-              <span
-                className="mission-difficulty"
-                style={{ color: getDifficultyColor(mission.difficulty) }}
-              >
-                {mission.difficulty}
-              </span>
-            </div>
-            <p className="mission-description">{mission.description}</p>
-            <div className="mission-info">
-              <span className="mission-agents">Max Agents: {mission.maxAgents}</span>
-              {mission.rewards && <span>XP: {mission.rewards.experience}</span>}
-              <span className="mission-time">
-                Travel: {mission.travelTime} | Duration: {mission.missionDuration}
-              </span>
-            </div>
-          </div>
-        ))}
+      {/* Mission Tabs */}
+      <div className="mission-tabs">
+        <button
+          type="button"
+          onClick={() => setActiveTab('available')}
+          className={`mission-tab ${activeTab === 'available' ? 'active' : ''}`}
+        >
+          Available ({filteredMissions.length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('history')}
+          className={`mission-tab ${activeTab === 'history' ? 'active' : ''}`}
+        >
+          History ({userProgress.missionCompletions.length})
+        </button>
       </div>
 
-      {/* Mission Details & Team Selection */}
-      {selectedMission && (
-        <div className="mission-details">
-          <h3>Mission Requirements</h3>
-          <div className="mission-chart">
-            {selectedAgents.length > 0 ? (
-              <OverlayRadarChart
-                layers={[
-                  {
-                    stats: selectedMission.requirements,
-                    color: 'rgba(217, 119, 6, 0.3)',
-                    label: 'Required',
-                    fillOpacity: 0.2,
-                  },
-                  {
-                    stats: combineStats(...selectedAgents.map((a) => a.stats)),
-                    color: 'rgba(20, 184, 166, 0.5)',
-                    label: 'Team',
-                    fillOpacity: 0.3,
-                  },
-                ]}
-                maxValue={10}
-                size={300}
-              />
-            ) : (
-              <OverlayRadarChart
-                layers={[
-                  {
-                    stats: selectedMission.requirements,
-                    color: 'rgba(217, 119, 6, 0.3)',
-                    label: 'Required',
-                    fillOpacity: 0.3,
-                  },
-                ]}
-                maxValue={10}
-                size={300}
-              />
-            )}
-          </div>
-
-          {selectedAgents.length > 0 && (
-            <>
-              <div
-                className="success-probability"
-                style={{ color: getSuccessColor(successProbability) }}
-              >
-                Success Probability: {(successProbability * 100).toFixed(0)}%
+      {activeTab === 'available' ? (
+        <>
+          {/* Difficulty Filter */}
+          <div className="mission-filters">
+            <div className="filter-group">
+              <span className="filter-label">Filter by Difficulty:</span>
+              <div className="difficulty-filters">
+                <button
+                  type="button"
+                  onClick={() => setDifficultyFilter('All')}
+                  className={`difficulty-filter-button ${difficultyFilter === 'All' ? 'active' : ''}`}
+                >
+                  All
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDifficultyFilter('Easy')}
+                  className={`difficulty-filter-button ${difficultyFilter === 'Easy' ? 'active' : ''}`}
+                >
+                  Easy
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDifficultyFilter('Medium')}
+                  className={`difficulty-filter-button ${difficultyFilter === 'Medium' ? 'active' : ''}`}
+                >
+                  Medium
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDifficultyFilter('Hard')}
+                  className={`difficulty-filter-button ${difficultyFilter === 'Hard' ? 'active' : ''}`}
+                >
+                  Hard
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDifficultyFilter('Extreme')}
+                  className={`difficulty-filter-button ${difficultyFilter === 'Extreme' ? 'active' : ''}`}
+                >
+                  Extreme
+                </button>
               </div>
+            </div>
+          </div>
 
-              {missionTimeBreakdown && missionTimeBreakdown.totalTime > 0 && (
-                <div className="mission-time-breakdown">
-                  <h4>Mission Timeline</h4>
-                  <div className="time-details">
-                    <div className="time-row">
-                      <span className="time-label">Travel (Outbound):</span>
-                      <span className="time-value">{missionTimeBreakdown.travelTimeOutbound}</span>
-                    </div>
-                    <div className="time-row">
-                      <span className="time-label">Mission Duration:</span>
-                      <span className="time-value">{missionTimeBreakdown.missionDuration}</span>
-                    </div>
-                    <div className="time-row">
-                      <span className="time-label">Travel (Return):</span>
-                      <span className="time-value">{missionTimeBreakdown.travelTimeReturn}</span>
-                    </div>
-                    <div className="time-row">
-                      <span className="time-label">Rest Time:</span>
-                      <span className="time-value">{missionTimeBreakdown.restTime}</span>
-                    </div>
-                    <div className="time-row total-time">
-                      <span className="time-label">Total Time:</span>
-                      <span className="time-value">{missionTimeBreakdown.totalTime}</span>
-                    </div>
-                    {missionTimeBreakdown.hasFastTravelers && (
-                      <div className="time-note">
-                        Some agents can travel faster due to flight license
-                      </div>
-                    )}
-                    {missionTimeBreakdown.hasQuickRecovery && (
-                      <div className="time-note">💤 Some agents recover faster than others</div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </>
+          {/* Completed Missions */}
+          <CompletedMissionsSection completedMissions={completedMissions} />
+
+          {/* Active Missions */}
+          <ActiveMissionsSection activeMissions={activeMissions} currentTime={currentTime} />
+
+          {/* Mission List */}
+          <MissionList
+            missions={filteredMissions}
+            selectedMission={selectedMission}
+            onMissionSelect={handleMissionSelect}
+            getDifficultyColor={getDifficultyColor}
+          />
+
+          {/* Mission Details & Team Selection */}
+          {selectedMission && (
+            <MissionDetailsSection
+              mission={selectedMission}
+              selectedAgents={selectedAgents}
+              allAgents={agents}
+              successProbability={successProbability}
+              missionTimeBreakdown={missionTimeBreakdown}
+              isAgentAvailable={isAgentAvailable}
+              onToggleAgent={toggleAgentSelection}
+              onDeployMission={handleDeployMission}
+              getSuccessColor={getSuccessColor}
+            />
           )}
-
-          <div className="team-header">
-            <h3>Select Team</h3>
-            <span className="team-count">
-              {selectedAgents.length}/{selectedMission.maxAgents}
-            </span>
-          </div>
-          <div className="agent-selection">
-            {agents.map((agent) => {
-              const isSelected = selectedAgents.some((a) => a.id === agent.id);
-              const isExcluded = selectedMission.excludedAgents?.includes(agent.id) ?? false;
-              const isAtLimit = selectedAgents.length >= selectedMission.maxAgents;
-              const isDisabled = isExcluded || (!isSelected && isAtLimit);
-              return (
-                <AgentSelectCard
-                  key={agent.id}
-                  agent={agent}
-                  isSelected={isSelected}
-                  isExcluded={isExcluded}
-                  isDisabled={isDisabled}
-                  onToggle={toggleAgentSelection}
-                />
-              );
-            })}
-          </div>
-        </div>
+        </>
+      ) : (
+        <MissionHistorySection userProgress={userProgress} allMissions={missions} />
       )}
     </div>
   );
