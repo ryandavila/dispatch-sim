@@ -17,8 +17,7 @@
       "experience": 100
     },
     "travelTime": 2,
-    "missionDuration": 4,
-    "restTime": 3
+    "missionDuration": 4
   },
   {
     "id": "mission-negotiation",
@@ -38,8 +37,7 @@
       "experience": 250
     },
     "travelTime": 3,
-    "missionDuration": 6,
-    "restTime": 5
+    "missionDuration": 6
   },
   {
     "id": "mission-extraction",
@@ -58,8 +56,7 @@
       "experience": 500
     },
     "travelTime": 4,
-    "missionDuration": 8,
-    "restTime": 8
+    "missionDuration": 8
   },
   {
     "id": "mission-infiltration",
@@ -79,8 +76,7 @@
       "experience": 1000
     },
     "travelTime": 6,
-    "missionDuration": 12,
-    "restTime": 12
+    "missionDuration": 12
   },
   {
     "id": "mission-courier",
@@ -100,7 +96,6 @@
       "experience": 75
     },
     "travelTime": 1,
-    "missionDuration": 3,
-    "restTime": 2
+    "missionDuration": 3
   }
 ]

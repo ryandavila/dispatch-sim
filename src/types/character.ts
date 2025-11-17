@@ -11,6 +11,7 @@ export interface Character {
   tags?: string[];
   canFly: boolean;
   isFlightLicensed: boolean;
+  restTime: number; // Time units needed to rest after a mission
 }
 
 // Helper functions
@@ -49,5 +50,6 @@ export function createCharacter(name: string, level: number = 1): Character {
     availablePoints: STARTING_BONUS_POINTS + (level - 1) * POINTS_PER_LEVEL,
     canFly: false,
     isFlightLicensed: false,
+    restTime: 5, // Default rest time
   };
 }

@@ -14,7 +14,8 @@ function createTestAgent(
   id: string,
   name: string,
   canFly: boolean,
-  isFlightLicensed: boolean
+  isFlightLicensed: boolean,
+  restTime: number = 5
 ): Character {
   return {
     id,
@@ -30,15 +31,12 @@ function createTestAgent(
     availablePoints: 0,
     canFly,
     isFlightLicensed,
+    restTime,
   };
 }
 
 // Helper function to create test mission
-function createTestMission(
-  travelTime: number,
-  missionDuration: number,
-  restTime: number = 5
-): Mission {
+function createTestMission(travelTime: number, missionDuration: number): Mission {
   return {
     id: 'test-mission',
     name: 'Test Mission',
@@ -54,7 +52,6 @@ function createTestMission(
     },
     travelTime,
     missionDuration,
-    restTime,
   };
 }
 
@@ -184,7 +181,7 @@ describe('Mission Time Calculations', () => {
       expect(breakdown.travelTimeOutbound).toBe(0);
       expect(breakdown.travelTimeReturn).toBe(0);
       expect(breakdown.missionDuration).toBe(20);
-      expect(breakdown.restTime).toBe(5);
+      expect(breakdown.restTime).toBe(0);
       expect(breakdown.totalTime).toBe(0);
       expect(breakdown.hasFastTravelers).toBe(false);
     });
@@ -273,6 +270,36 @@ describe('Mission Time Calculations', () => {
       expect(breakdown.hasFastTravelers).toBe(true);
       expect(breakdown.fastestTravelTime).toBe(5);
       expect(breakdown.slowestTravelTime).toBe(10);
+    });
+
+    it('should use longest rest time when agents have different rest times', () => {
+      const mission = createTestMission(10, 20);
+      const fastRecovery = createTestAgent('1', 'Fast Recovery', false, false, 2); // Phenomaman-like
+      const normalRecovery = createTestAgent('2', 'Normal Recovery', false, false, 5);
+      const slowRecovery = createTestAgent('3', 'Slow Recovery', false, false, 6);
+
+      const breakdown = getMissionTimeBreakdown(mission, [
+        fastRecovery,
+        normalRecovery,
+        slowRecovery,
+      ]);
+
+      expect(breakdown.restTime).toBe(6); // Longest rest time
+      expect(breakdown.hasQuickRecovery).toBe(true);
+      expect(breakdown.shortestRestTime).toBe(2);
+      expect(breakdown.longestRestTime).toBe(6);
+      expect(breakdown.totalTime).toBe(46); // 10 + 20 + 10 + 6
+    });
+
+    it('should not flag quick recovery when all agents have same rest time', () => {
+      const mission = createTestMission(10, 20);
+      const agent1 = createTestAgent('1', 'Agent 1', false, false, 5);
+      const agent2 = createTestAgent('2', 'Agent 2', false, false, 5);
+
+      const breakdown = getMissionTimeBreakdown(mission, [agent1, agent2]);
+
+      expect(breakdown.hasQuickRecovery).toBe(false);
+      expect(breakdown.restTime).toBe(5);
     });
   });
 });

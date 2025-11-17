@@ -14,7 +14,8 @@
     "tags": ["Flight", "Combat", "Momentum"],
     "notes": "Flight.\n\nGreat for combat right away. An ability that improves his stats when he succeeds.",
     "canFly": true,
-    "isFlightLicensed": false
+    "isFlightLicensed": false,
+    "restTime": 5
   },
   {
     "id": "coupe",
@@ -31,7 +32,8 @@
     "tags": ["Flight", "Mobility", "Second Chance"],
     "notes": "Flight. High movement.\n\nAn ability to reattempt failed calls.",
     "canFly": true,
-    "isFlightLicensed": false
+    "isFlightLicensed": false,
+    "restTime": 5
   },
   {
     "id": "punch-up",
@@ -48,7 +50,8 @@
     "tags": ["Tank", "Unkillable", "Rage"],
     "notes": "He can't be downed.\n\nHe's better when injured.",
     "canFly": false,
-    "isFlightLicensed": false
+    "isFlightLicensed": false,
+    "restTime": 6
   },
   {
     "id": "prism",
@@ -65,7 +68,8 @@
     "tags": ["Charisma", "Duplicate", "Versatile"],
     "notes": "Good charisma right away.\n\nShe can duplicate other characters.",
     "canFly": false,
-    "isFlightLicensed": false
+    "isFlightLicensed": false,
+    "restTime": 5
   },
   {
     "id": "invisigal",
@@ -82,7 +86,8 @@
     "tags": ["Stealth", "Solo", "Infiltrator"],
     "notes": "Well-rounded right away.\n\nShe's great for solo missions.",
     "canFly": false,
-    "isFlightLicensed": false
+    "isFlightLicensed": false,
+    "restTime": 5
   },
   {
     "id": "sonar",
@@ -99,7 +104,8 @@
     "tags": ["Intellect", "Shapeshifter", "Flight"],
     "notes": "Two forms, making him essentially two different characters (though you can't control the change).\n\nFlight (on occasion). He can reattempt failed calls.",
     "canFly": true,
-    "isFlightLicensed": false
+    "isFlightLicensed": false,
+    "restTime": 5
   },
   {
     "id": "malevola",
@@ -116,7 +122,8 @@
     "tags": ["Support", "Healer", "Balanced"],
     "notes": "Great all-rounder.\n\nShe can heal others.",
     "canFly": false,
-    "isFlightLicensed": false
+    "isFlightLicensed": false,
+    "restTime": 5
   },
   {
     "id": "golem",
@@ -133,7 +140,8 @@
     "tags": ["Tank", "Solo", "Durable"],
     "notes": "Easy to turn into an all-rounder.\n\nGreat for solo missions.",
     "canFly": false,
-    "isFlightLicensed": false
+    "isFlightLicensed": false,
+    "restTime": 6
   },
   {
     "id": "phenomaman",
@@ -150,7 +158,8 @@
     "tags": ["Flight", "Powerhouse", "Gambler"],
     "notes": "Flight and low rest time. Best starting stats.\n\nFun gambling mechanic to spice things up.",
     "canFly": true,
-    "isFlightLicensed": true
+    "isFlightLicensed": true,
+    "restTime": 2
   },
   {
     "id": "waterboy",
@@ -167,6 +176,7 @@
     "tags": ["Support", "Healer", "Flexible"],
     "notes": "Easy to turn into whatever your team is lacking. He can heal others.\n\nGreat as a secondary or tertiary character to improve the chances of success on tough calls.",
     "canFly": false,
-    "isFlightLicensed": false
+    "isFlightLicensed": false,
+    "restTime": 5
   }
 ]

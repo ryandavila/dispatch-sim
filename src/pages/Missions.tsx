@@ -155,8 +155,7 @@ export function Missions() {
               <span className="mission-agents">Max Agents: {mission.maxAgents}</span>
               {mission.rewards && <span>XP: {mission.rewards.experience}</span>}
               <span className="mission-time">
-                Travel: {mission.travelTime} | Duration: {mission.missionDuration} | Rest:{' '}
-                {mission.restTime}
+                Travel: {mission.travelTime} | Duration: {mission.missionDuration}
               </span>
             </div>
           </div>
@@ -240,6 +239,9 @@ export function Missions() {
                       <div className="time-note">
                         Some agents can travel faster due to flight license
                       </div>
+                    )}
+                    {missionTimeBreakdown.hasQuickRecovery && (
+                      <div className="time-note">💤 Some agents recover faster than others</div>
                     )}
                   </div>
                 </div>

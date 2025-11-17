@@ -23,7 +23,7 @@ export function calculateAgentTravelTime(baseTravelTime: number, agent: Characte
 /**
  * Calculate the total mission time for a team
  * The mission begins once all agents arrive (slowest travel time)
- * Total time = (longest travel time * 2 for round trip) + mission duration + rest time
+ * Total time = (longest travel time * 2 for round trip) + mission duration + longest agent rest time
  *
  * @param mission - The mission being undertaken
  * @param agents - The team of agents assigned to the mission
@@ -40,8 +40,11 @@ export function calculateTotalMissionTime(mission: Mission, agents: Character[])
   // Mission starts when the slowest agent arrives
   const longestTravelTime = Math.max(...travelTimes);
 
-  // Total time = round trip + mission duration + rest time
-  return longestTravelTime * 2 + mission.missionDuration + mission.restTime;
+  // Team is ready when the agent who needs the most rest is ready
+  const longestRestTime = Math.max(...agents.map((agent) => agent.restTime));
+
+  // Total time = round trip + mission duration + longest agent rest time
+  return longestTravelTime * 2 + mission.missionDuration + longestRestTime;
 }
 
 /**
@@ -60,10 +63,10 @@ export function calculateMissionStartTime(mission: Mission, agents: Character[])
 }
 
 /**
- * Get details about team travel times for display
+ * Get details about team travel and rest times for display
  * @param mission - The mission being undertaken
  * @param agents - The team of agents assigned to the mission
- * @returns Object with travel time details
+ * @returns Object with travel time and rest time details
  */
 export function getMissionTimeBreakdown(mission: Mission, agents: Character[]) {
   if (agents.length === 0) {
@@ -71,9 +74,10 @@ export function getMissionTimeBreakdown(mission: Mission, agents: Character[]) {
       travelTimeOutbound: 0,
       travelTimeReturn: 0,
       missionDuration: mission.missionDuration,
-      restTime: mission.restTime,
+      restTime: 0,
       totalTime: 0,
       hasFastTravelers: false,
+      hasQuickRecovery: false,
       slowestTravelTime: 0,
     };
   }
@@ -87,15 +91,23 @@ export function getMissionTimeBreakdown(mission: Mission, agents: Character[]) {
   const fastestTravelTime = Math.min(...agentTravelTimes.map((at) => at.travelTime));
   const hasFastTravelers = slowestTravelTime !== fastestTravelTime;
 
+  // Calculate rest times
+  const longestRestTime = Math.max(...agents.map((agent) => agent.restTime));
+  const shortestRestTime = Math.min(...agents.map((agent) => agent.restTime));
+  const hasQuickRecovery = longestRestTime !== shortestRestTime;
+
   return {
     travelTimeOutbound: slowestTravelTime,
     travelTimeReturn: slowestTravelTime,
     missionDuration: mission.missionDuration,
-    restTime: mission.restTime,
-    totalTime: slowestTravelTime * 2 + mission.missionDuration + mission.restTime,
+    restTime: longestRestTime,
+    totalTime: slowestTravelTime * 2 + mission.missionDuration + longestRestTime,
     hasFastTravelers,
+    hasQuickRecovery,
     slowestTravelTime,
     fastestTravelTime,
     agentTravelTimes,
+    longestRestTime,
+    shortestRestTime,
   };
 }

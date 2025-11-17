@@ -13,7 +13,6 @@ export interface Mission {
   };
   travelTime: number; // Time units for one-way travel
   missionDuration: number; // Time units for mission completion
-  restTime: number; // Time units agents need to rest after returning
 }
 
 export function createMission(
@@ -24,7 +23,6 @@ export function createMission(
   maxAgents: number = 2,
   travelTime: number = 5,
   missionDuration: number = 10,
-  restTime: number = 5,
   excludedAgents?: string[]
 ): Mission {
   return {
@@ -37,6 +35,5 @@ export function createMission(
     excludedAgents,
     travelTime,
     missionDuration,
-    restTime,
   };
 }
