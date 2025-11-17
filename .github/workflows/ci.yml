@@ -20,13 +20,13 @@ jobs:
           bun-version: latest
 
       - name: Install dependencies
-        run: bun install
+        run: make install
 
       - name: Run linter
-        run: bun run lint
+        run: make lint
 
       - name: Run tests
-        run: bun test
+        run: make test
 
       - name: Build project
-        run: bun run build
+        run: make build
