@@ -67,6 +67,14 @@ export function Roster() {
 
     // Apply sorting
     filtered.sort((a, b) => {
+      // Always prioritize agents with available points first
+      const aHasPoints = a.availablePoints > 0;
+      const bHasPoints = b.availablePoints > 0;
+      if (aHasPoints !== bHasPoints) {
+        return bHasPoints ? 1 : -1; // Agents with points come first
+      }
+
+      // Then apply the selected sort
       switch (sortBy) {
         case 'name':
           return a.name.localeCompare(b.name);

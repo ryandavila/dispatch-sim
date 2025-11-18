@@ -492,6 +492,34 @@
   box-shadow: 0 8px 24px rgba(20, 184, 166, 0.6);
 }
 
+/* Level up highlight */
+.character-card.has-level-up {
+  border-color: #f59e0b;
+  box-shadow:
+    0 8px 24px rgba(245, 158, 11, 0.6),
+    0 0 40px rgba(245, 158, 11, 0.3);
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.character-card.has-level-up::before {
+  background: linear-gradient(to bottom, #fbbf24 0%, #f59e0b 100%);
+  border-bottom-color: #d97706;
+}
+
+@keyframes pulse-glow {
+  0%,
+  100% {
+    box-shadow:
+      0 8px 24px rgba(245, 158, 11, 0.6),
+      0 0 40px rgba(245, 158, 11, 0.3);
+  }
+  50% {
+    box-shadow:
+      0 8px 32px rgba(245, 158, 11, 0.8),
+      0 0 60px rgba(245, 158, 11, 0.5);
+  }
+}
+
 .character-card-header {
   display: flex;
   justify-content: space-between;
@@ -512,11 +540,41 @@
   letter-spacing: 1px;
 }
 
+.character-header-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+}
+
 .character-card-header .character-level {
   font-size: 0.85rem;
   color: #6b5d48;
   font-weight: 700;
   text-transform: uppercase;
+}
+
+.level-up-badge {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #ffffff;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 8px rgba(217, 119, 6, 0.4);
+  animation: badge-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes badge-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
 }
 
 /* XP Progress Bar */

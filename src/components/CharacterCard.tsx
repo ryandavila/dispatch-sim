@@ -15,10 +15,11 @@ export function CharacterCard({ character, onClick, isSelected = false }: Charac
   const xpIntoCurrentLevel = character.experience - xpForCurrentLevel;
   const xpNeededForLevel = xpForNextLevel - xpForCurrentLevel;
   const xpProgress = (xpIntoCurrentLevel / xpNeededForLevel) * 100;
+  const hasLevelUp = character.availablePoints > 0;
 
   return (
     <motion.div
-      className={`character-card ${isSelected ? 'selected' : ''}`}
+      className={`character-card ${isSelected ? 'selected' : ''} ${hasLevelUp ? 'has-level-up' : ''}`}
       onClick={onClick}
       whileHover={{ scale: 1.02, y: -4 }}
       whileTap={{ scale: 0.98 }}
@@ -27,7 +28,10 @@ export function CharacterCard({ character, onClick, isSelected = false }: Charac
     >
       <div className="character-card-header">
         <h3>{character.name}</h3>
-        <span className="character-level">Level {character.level}</span>
+        <div className="character-header-right">
+          <span className="character-level">Level {character.level}</span>
+          {hasLevelUp && <span className="level-up-badge">⬆ Level Up!</span>}
+        </div>
       </div>
 
       {/* XP Progress Bar */}
