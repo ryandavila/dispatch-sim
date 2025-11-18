@@ -29,7 +29,7 @@ preview:
 	bun preview
 
 test:
-	bun test
+	bun run test
 
 test-ui:
 	bun test:ui
