@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import type { Character } from '../types/character';
+import { getExperienceForLevel, getExperienceForNextLevel } from '../types/character';
 import { RadarChart } from './RadarChart';
 
 interface CharacterCardProps {
@@ -9,6 +10,12 @@ interface CharacterCardProps {
 }
 
 export function CharacterCard({ character, onClick, isSelected = false }: CharacterCardProps) {
+  const xpForCurrentLevel = getExperienceForLevel(character.level);
+  const xpForNextLevel = getExperienceForNextLevel(character.level);
+  const xpIntoCurrentLevel = character.experience - xpForCurrentLevel;
+  const xpNeededForLevel = xpForNextLevel - xpForCurrentLevel;
+  const xpProgress = (xpIntoCurrentLevel / xpNeededForLevel) * 100;
+
   return (
     <motion.div
       className={`character-card ${isSelected ? 'selected' : ''}`}
@@ -21,6 +28,16 @@ export function CharacterCard({ character, onClick, isSelected = false }: Charac
       <div className="character-card-header">
         <h3>{character.name}</h3>
         <span className="character-level">Level {character.level}</span>
+      </div>
+
+      {/* XP Progress Bar */}
+      <div className="character-xp-progress">
+        <div className="xp-progress-bar">
+          <div className="xp-progress-fill" style={{ width: `${Math.min(100, xpProgress)}%` }} />
+        </div>
+        <div className="xp-progress-text">
+          {xpIntoCurrentLevel} / {xpNeededForLevel} XP
+        </div>
       </div>
 
       {character.tags && character.tags.length > 0 && (

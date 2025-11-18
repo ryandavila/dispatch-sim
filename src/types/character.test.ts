@@ -1,9 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
+  applyExperience,
   BASE_STATS_PER_PILLAR,
   calculateTotalAllocatedPoints,
   createBaseStats,
   createCharacter,
+  getExperienceForLevel,
+  getExperienceForNextLevel,
+  getExperienceToNextLevel,
+  getLevelFromExperience,
   POINTS_PER_LEVEL,
   STARTING_BONUS_POINTS,
 } from './character';
@@ -93,6 +98,115 @@ describe('Character System', () => {
 
       expect(level2.availablePoints - level1.availablePoints).toBe(POINTS_PER_LEVEL);
       expect(level3.availablePoints - level2.availablePoints).toBe(POINTS_PER_LEVEL);
+    });
+  });
+
+  describe('Experience System', () => {
+    describe('getExperienceForLevel', () => {
+      it('should calculate XP required for each level using quadratic formula', () => {
+        expect(getExperienceForLevel(1)).toBe(50); // 1² * 50 = 50
+        expect(getExperienceForLevel(2)).toBe(200); // 2² * 50 = 200
+        expect(getExperienceForLevel(3)).toBe(450); // 3² * 50 = 450
+        expect(getExperienceForLevel(4)).toBe(800); // 4² * 50 = 800
+        expect(getExperienceForLevel(5)).toBe(1250); // 5² * 50 = 1250
+      });
+    });
+
+    describe('getExperienceForNextLevel', () => {
+      it('should return XP needed for the next level', () => {
+        expect(getExperienceForNextLevel(1)).toBe(200); // Level 2
+        expect(getExperienceForNextLevel(2)).toBe(450); // Level 3
+        expect(getExperienceForNextLevel(3)).toBe(800); // Level 4
+      });
+    });
+
+    describe('getExperienceToNextLevel', () => {
+      it('should calculate XP needed to reach next level from current XP', () => {
+        // At level 1 (50 XP) with 100 XP total, need 100 more to reach level 2 (200 XP)
+        expect(getExperienceToNextLevel(1, 100)).toBe(100);
+
+        // At level 1 (50 XP) with 50 XP total (start), need 150 to reach level 2 (200 XP)
+        expect(getExperienceToNextLevel(1, 50)).toBe(150);
+
+        // At level 2 (200 XP) with 300 XP total, need 150 more to reach level 3 (450 XP)
+        expect(getExperienceToNextLevel(2, 300)).toBe(150);
+      });
+    });
+
+    describe('getLevelFromExperience', () => {
+      it('should calculate level from total XP', () => {
+        expect(getLevelFromExperience(0)).toBe(1); // Min level
+        expect(getLevelFromExperience(50)).toBe(1);
+        expect(getLevelFromExperience(199)).toBe(1);
+        expect(getLevelFromExperience(200)).toBe(2);
+        expect(getLevelFromExperience(449)).toBe(2);
+        expect(getLevelFromExperience(450)).toBe(3);
+        expect(getLevelFromExperience(799)).toBe(3);
+        expect(getLevelFromExperience(800)).toBe(4);
+      });
+    });
+
+    describe('applyExperience', () => {
+      it('should add XP without leveling up', () => {
+        const character = createCharacter('Test', 1);
+        const updated = applyExperience(character, 50);
+
+        expect(updated.experience).toBe(100); // 50 base + 50 gained
+        expect(updated.level).toBe(1);
+        expect(updated.availablePoints).toBe(character.availablePoints);
+      });
+
+      it('should level up when reaching XP threshold', () => {
+        const character = createCharacter('Test', 1);
+        // Need 150 more XP to reach level 2 (200 XP total)
+        const updated = applyExperience(character, 150);
+
+        expect(updated.experience).toBe(200);
+        expect(updated.level).toBe(2);
+        expect(updated.availablePoints).toBe(character.availablePoints + 1);
+      });
+
+      it('should level up multiple levels at once', () => {
+        const character = createCharacter('Test', 1);
+        // Need 400 more XP to reach level 3 (450 XP total)
+        const updated = applyExperience(character, 400);
+
+        expect(updated.experience).toBe(450);
+        expect(updated.level).toBe(3);
+        expect(updated.availablePoints).toBe(character.availablePoints + 2); // +1 for L2, +1 for L3
+      });
+
+      it('should preserve existing stats and properties', () => {
+        const character = createCharacter('Test', 1);
+        const updated = applyExperience(character, 100);
+
+        expect(updated.name).toBe(character.name);
+        expect(updated.stats).toEqual(character.stats);
+        expect(updated.canFly).toBe(character.canFly);
+      });
+
+      it('should work with characters that already have levels', () => {
+        const character = createCharacter('Test', 2);
+        character.experience = 200; // At level 2 threshold
+        // Need 250 more to reach level 3 (450 XP total)
+        const updated = applyExperience(character, 250);
+
+        expect(updated.level).toBe(3);
+        expect(updated.experience).toBe(450);
+        expect(updated.availablePoints).toBe(character.availablePoints + 1);
+      });
+    });
+
+    describe('createCharacter with XP', () => {
+      it('should initialize character with correct XP for their level', () => {
+        const level1 = createCharacter('Test', 1);
+        const level2 = createCharacter('Test', 2);
+        const level3 = createCharacter('Test', 3);
+
+        expect(level1.experience).toBe(50);
+        expect(level2.experience).toBe(200);
+        expect(level3.experience).toBe(450);
+      });
     });
   });
 });

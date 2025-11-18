@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import type { Character } from '../types/character';
-import { calculateTotalAllocatedPoints, POINTS_PER_LEVEL } from '../types/character';
+import { calculateTotalAllocatedPoints } from '../types/character';
 import type { PillarType } from '../types/stats';
 import { PILLARS } from '../types/stats';
 import { RadarChart } from './RadarChart';
@@ -45,25 +45,12 @@ export function CharacterSheet({ character, onUpdateCharacter }: CharacterSheetP
     onUpdateCharacter(updatedCharacter);
   };
 
-  const handleLevelUp = () => {
-    const updatedCharacter = {
-      ...character,
-      level: character.level + 1,
-      availablePoints: character.availablePoints + POINTS_PER_LEVEL,
-    };
-
-    onUpdateCharacter(updatedCharacter);
-  };
-
   return (
     <div className="character-sheet">
       <div className="character-header">
         <h2>{character.name}</h2>
         <div className="character-level">
           <span>Level {character.level}</span>
-          <button type="button" onClick={handleLevelUp} className="level-up-btn">
-            Level Up
-          </button>
         </div>
       </div>
 

@@ -5,10 +5,11 @@ import { MissionDetailsSection } from '../components/MissionDetailsSection';
 import { MissionHistorySection } from '../components/MissionHistorySection';
 import { MissionList } from '../components/MissionList';
 import { useActiveMissions } from '../hooks/useActiveMissions';
+import { useAgentProgress } from '../hooks/useAgentProgress';
 import { useUserProgress } from '../hooks/useUserProgress';
 import type { Character } from '../types/character';
 import type { Mission } from '../types/mission';
-import { loadAgents, loadMissions } from '../utils/dataLoader';
+import { loadMissions } from '../utils/dataLoader';
 import { calculateTeamSuccessProbability } from '../utils/geometry';
 import { getMissionTimeBreakdown } from '../utils/missionTime';
 
@@ -18,7 +19,8 @@ type MissionTab = 'available' | 'history';
 
 export function Missions() {
   const missions = loadMissions();
-  const agents = loadAgents();
+  const { getAgentsWithProgress, awardExperience } = useAgentProgress();
+  const agents = getAgentsWithProgress();
   const [selectedMission, setSelectedMission] = useState<Mission | null>(null);
   const [selectedAgents, setSelectedAgents] = useState<Character[]>([]);
   const [difficultyFilter, setDifficultyFilter] = useState<DifficultyFilter>('All');
@@ -28,14 +30,20 @@ export function Missions() {
   const handleMissionComplete = useCallback(
     (activeMission: import('../types/activeMission').ActiveMission) => {
       const experienceGained = activeMission.mission.rewards?.experience || 0;
+
+      // Award XP to user progress
       addMissionCompletion({
         missionId: activeMission.mission.id,
         completedAt: Date.now(),
         agents: activeMission.agents.map((a) => a.id),
         experienceGained,
       });
+
+      // Award XP to agents
+      const agentIds = activeMission.agents.map((a) => a.id);
+      awardExperience(agentIds, experienceGained);
     },
-    [addMissionCompletion]
+    [addMissionCompletion, awardExperience]
   );
 
   const { activeMissions, completedMissions, currentTime, deployMission, isAgentAvailable } =

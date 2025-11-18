@@ -15,7 +15,8 @@
     "notes": "Flight.\n\nGreat for combat right away. An ability that improves his stats when he succeeds.",
     "canFly": true,
     "isFlightLicensed": false,
-    "restTime": 5
+    "restTime": 5,
+    "experience": 50
   },
   {
     "id": "coupe",
@@ -33,7 +34,8 @@
     "notes": "Flight. High movement.\n\nAn ability to reattempt failed calls.",
     "canFly": true,
     "isFlightLicensed": false,
-    "restTime": 5
+    "restTime": 5,
+    "experience": 50
   },
   {
     "id": "punch-up",
@@ -51,7 +53,8 @@
     "notes": "He can't be downed.\n\nHe's better when injured.",
     "canFly": false,
     "isFlightLicensed": false,
-    "restTime": 6
+    "restTime": 6,
+    "experience": 50
   },
   {
     "id": "prism",
@@ -69,7 +72,8 @@
     "notes": "Good charisma right away.\n\nShe can duplicate other characters.",
     "canFly": false,
     "isFlightLicensed": false,
-    "restTime": 5
+    "restTime": 5,
+    "experience": 50
   },
   {
     "id": "invisigal",
@@ -87,7 +91,8 @@
     "notes": "Well-rounded right away.\n\nShe's great for solo missions.",
     "canFly": false,
     "isFlightLicensed": false,
-    "restTime": 5
+    "restTime": 5,
+    "experience": 50
   },
   {
     "id": "sonar",
@@ -105,7 +110,8 @@
     "notes": "Two forms, making him essentially two different characters (though you can't control the change).\n\nFlight (on occasion). He can reattempt failed calls.",
     "canFly": true,
     "isFlightLicensed": false,
-    "restTime": 5
+    "restTime": 5,
+    "experience": 50
   },
   {
     "id": "malevola",
@@ -123,7 +129,8 @@
     "notes": "Great all-rounder.\n\nShe can heal others.",
     "canFly": false,
     "isFlightLicensed": false,
-    "restTime": 5
+    "restTime": 5,
+    "experience": 50
   },
   {
     "id": "golem",
@@ -141,7 +148,8 @@
     "notes": "Easy to turn into an all-rounder.\n\nGreat for solo missions.",
     "canFly": false,
     "isFlightLicensed": false,
-    "restTime": 6
+    "restTime": 6,
+    "experience": 50
   },
   {
     "id": "phenomaman",
@@ -159,7 +167,8 @@
     "notes": "Flight and low rest time. Best starting stats.\n\nFun gambling mechanic to spice things up.",
     "canFly": true,
     "isFlightLicensed": true,
-    "restTime": 2
+    "restTime": 2,
+    "experience": 50
   },
   {
     "id": "waterboy",
@@ -177,6 +186,7 @@
     "notes": "Easy to turn into whatever your team is lacking. He can heal others.\n\nGreat as a secondary or tertiary character to improve the chances of success on tough calls.",
     "canFly": false,
     "isFlightLicensed": false,
-    "restTime": 5
+    "restTime": 5,
+    "experience": 50
   }
 ]

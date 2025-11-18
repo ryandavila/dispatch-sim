@@ -2,13 +2,14 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CharacterCard } from '../components/CharacterCard';
 import { CharacterSheet } from '../components/CharacterSheet';
+import { useAgentProgress } from '../hooks/useAgentProgress';
 import type { Character } from '../types/character';
-import { loadAgentById, loadAgents } from '../utils/dataLoader';
 
 type SortOption = 'name' | 'level' | 'combat' | 'vigor' | 'mobility' | 'charisma' | 'intellect';
 
 export function Roster() {
-  const agents = loadAgents();
+  const { getAgentsWithProgress, updateAgentStats } = useAgentProgress();
+  const agents = getAgentsWithProgress();
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const _navigate = useNavigate();
@@ -16,15 +17,16 @@ export function Roster() {
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
 
   // Handle browser back/forward buttons
+  // biome-ignore lint/correctness/useExhaustiveDependencies: agents causes infinite loop, intentionally omitted
   useEffect(() => {
     const characterId = searchParams.get('character');
     if (characterId) {
-      const character = loadAgentById(characterId);
+      const character = agents.find((a) => a.id === characterId);
       setSelectedCharacter(character || null);
     } else {
       setSelectedCharacter(null);
     }
-  }, [searchParams]);
+  }, [searchParams]); // Only depend on searchParams, not agents
 
   const handleSelectCharacter = (character: Character) => {
     setSelectedCharacter(character);
@@ -32,7 +34,10 @@ export function Roster() {
   };
 
   const handleUpdateCharacter = (updatedCharacter: Character) => {
+    // Update local state
     setSelectedCharacter(updatedCharacter);
+    // Persist to agent progress
+    updateAgentStats(updatedCharacter);
   };
 
   const handleBack = () => {

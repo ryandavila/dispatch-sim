@@ -5,6 +5,7 @@ export interface Character {
   id: string;
   name: string;
   level: number;
+  experience: number; // Current XP
   stats: StatPool;
   availablePoints: number;
   notes?: string;
@@ -41,11 +42,71 @@ export function calculateTotalAllocatedPoints(stats: StatPool): number {
   );
 }
 
+/**
+ * Calculate XP required to reach a specific level (quadratic curve)
+ * Formula: level² * 50
+ */
+export function getExperienceForLevel(level: number): number {
+  return level * level * 50;
+}
+
+/**
+ * Calculate XP required to level up from current level
+ */
+export function getExperienceForNextLevel(currentLevel: number): number {
+  return getExperienceForLevel(currentLevel + 1);
+}
+
+/**
+ * Calculate how much XP is needed to reach the next level from current XP
+ */
+export function getExperienceToNextLevel(currentLevel: number, currentXP: number): number {
+  const xpForNextLevel = getExperienceForNextLevel(currentLevel);
+  const xpForCurrentLevel = getExperienceForLevel(currentLevel);
+  const xpIntoCurrentLevel = currentXP - xpForCurrentLevel;
+  const xpNeededForLevel = xpForNextLevel - xpForCurrentLevel;
+  return xpNeededForLevel - xpIntoCurrentLevel;
+}
+
+/**
+ * Calculate level from total XP
+ */
+export function getLevelFromExperience(xp: number): number {
+  // Solve: level² * 50 = xp
+  // level = √(xp / 50)
+  return Math.floor(Math.sqrt(xp / 50)) || 1;
+}
+
+/**
+ * Apply experience to a character and handle level ups
+ * Returns updated character with new level, XP, and available points
+ */
+export function applyExperience(character: Character, xpGained: number): Character {
+  const newXP = character.experience + xpGained;
+  const newLevel = getLevelFromExperience(newXP);
+  const levelsGained = newLevel - character.level;
+
+  if (levelsGained > 0) {
+    return {
+      ...character,
+      experience: newXP,
+      level: newLevel,
+      availablePoints: character.availablePoints + levelsGained * POINTS_PER_LEVEL,
+    };
+  }
+
+  return {
+    ...character,
+    experience: newXP,
+  };
+}
+
 export function createCharacter(name: string, level: number = 1): Character {
   return {
     id: crypto.randomUUID(),
     name,
     level,
+    experience: getExperienceForLevel(level), // Start with XP for current level
     stats: createBaseStats(),
     availablePoints: STARTING_BONUS_POINTS + (level - 1) * POINTS_PER_LEVEL,
     canFly: false,
