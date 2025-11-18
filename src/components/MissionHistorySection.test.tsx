@@ -3,10 +3,10 @@
  */
 
 import { render, screen } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
-import { MissionHistorySection } from './MissionHistorySection';
-import type { UserProgress } from '../types/userProgress';
+import { describe, expect, it } from 'vitest';
 import type { Mission } from '../types/mission';
+import type { UserProgress } from '../types/userProgress';
+import { MissionHistorySection } from './MissionHistorySection';
 
 const mockMissions: Mission[] = [
   {
@@ -15,7 +15,7 @@ const mockMissions: Mission[] = [
     description: 'Save the civilians',
     difficulty: 'Easy',
     maxAgents: 2,
-    requirements: { Power: 5, Defense: 5, Speed: 5, Intellect: 5 },
+    requirements: { Combat: 5, Vigor: 5, Mobility: 5, Charisma: 5, Intellect: 5 },
     excludedAgents: [],
     travelTime: 2,
     missionDuration: 4,
@@ -27,7 +27,7 @@ const mockMissions: Mission[] = [
     description: 'Gather intel',
     difficulty: 'Medium',
     maxAgents: 3,
-    requirements: { Power: 3, Defense: 3, Speed: 7, Intellect: 7 },
+    requirements: { Combat: 3, Vigor: 3, Mobility: 7, Charisma: 7, Intellect: 7 },
     excludedAgents: [],
     travelTime: 3,
     missionDuration: 6,

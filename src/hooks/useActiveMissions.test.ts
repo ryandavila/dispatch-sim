@@ -2,11 +2,11 @@
  * @vitest-environment jsdom
  */
 
-import { renderHook, act } from '@testing-library/react';
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { useActiveMissions } from './useActiveMissions';
-import type { Mission } from '../types/mission';
+import { act, renderHook } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Character } from '../types/character';
+import type { Mission } from '../types/mission';
+import { useActiveMissions } from './useActiveMissions';
 
 const mockMission: Mission = {
   id: 'mission-test',
@@ -14,7 +14,7 @@ const mockMission: Mission = {
   description: 'A test mission',
   difficulty: 'Easy',
   maxAgents: 2,
-  requirements: { Power: 5, Defense: 5, Speed: 5, Intellect: 5 },
+  requirements: { Combat: 5, Vigor: 5, Mobility: 5, Charisma: 5, Intellect: 5 },
   excludedAgents: [],
   travelTime: 2,
   missionDuration: 4,
@@ -24,7 +24,7 @@ const mockMission: Mission = {
 const mockAgent: Character = {
   id: 'agent-test',
   name: 'Test Agent',
-  stats: { Power: 6, Defense: 6, Speed: 6, Intellect: 6 },
+  stats: { Combat: 6, Vigor: 6, Mobility: 6, Charisma: 6, Intellect: 6 },
   canFly: false,
   isFlightLicensed: false,
   restTime: 3,

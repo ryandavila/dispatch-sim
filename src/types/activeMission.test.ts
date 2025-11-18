@@ -1,7 +1,7 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { calculateMissionProgress, createActiveMission } from './activeMission';
-import type { Mission } from './mission';
 import type { Character } from './character';
+import type { Mission } from './mission';
 
 const mockMission: Mission = {
   id: 'mission-test',
@@ -9,7 +9,7 @@ const mockMission: Mission = {
   description: 'A test mission',
   difficulty: 'Easy',
   maxAgents: 2,
-  requirements: { Power: 5, Defense: 5, Speed: 5, Intellect: 5 },
+  requirements: { Combat: 5, Vigor: 5, Mobility: 5, Charisma: 5, Intellect: 5 },
   excludedAgents: [],
   travelTime: 2,
   missionDuration: 4,
@@ -19,7 +19,7 @@ const mockMission: Mission = {
 const mockAgent: Character = {
   id: 'agent-test',
   name: 'Test Agent',
-  stats: { Power: 6, Defense: 6, Speed: 6, Intellect: 6 },
+  stats: { Combat: 6, Vigor: 6, Mobility: 6, Charisma: 6, Intellect: 6 },
   canFly: false,
   isFlightLicensed: false,
   restTime: 3,
@@ -33,7 +33,7 @@ describe('createActiveMission', () => {
       2000, // 2s travel outbound
       4000, // 4s mission
       2000, // 2s travel return
-      3000  // 3s rest
+      3000 // 3s rest
     );
 
     expect(activeMission.mission).toBe(mockMission);
@@ -56,7 +56,7 @@ describe('calculateMissionProgress', () => {
     2000, // 2s travel outbound
     4000, // 4s mission
     2000, // 2s travel return
-    3000  // 3s rest
+    3000 // 3s rest
   );
   activeMission.startTime = startTime;
 
@@ -74,7 +74,7 @@ describe('calculateMissionProgress', () => {
 
     expect(progress.phase).toBe('travel-outbound');
     expect(progress.phaseProgress).toBeCloseTo(0.5); // 50% through 2s travel
-    expect(progress.totalProgress).toBeCloseTo(1/11); // 1s out of 11s total
+    expect(progress.totalProgress).toBeCloseTo(1 / 11); // 1s out of 11s total
   });
 
   it('should transition to active phase after travel', () => {
