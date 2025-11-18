@@ -8,8 +8,7 @@ import type { Character } from '../types/character';
 type SortOption = 'name' | 'level' | 'combat' | 'vigor' | 'mobility' | 'charisma' | 'intellect';
 
 export function Roster() {
-  const { getAgentsWithProgress, updateAgentStats } = useAgentProgress();
-  const agents = getAgentsWithProgress();
+  const { agents, updateAgentStats } = useAgentProgress();
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const _navigate = useNavigate();
@@ -17,7 +16,6 @@ export function Roster() {
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
 
   // Handle browser back/forward buttons
-  // biome-ignore lint/correctness/useExhaustiveDependencies: agents causes infinite loop, intentionally omitted
   useEffect(() => {
     const characterId = searchParams.get('character');
     if (characterId) {
@@ -26,7 +24,7 @@ export function Roster() {
     } else {
       setSelectedCharacter(null);
     }
-  }, [searchParams]); // Only depend on searchParams, not agents
+  }, [searchParams, agents]);
 
   const handleSelectCharacter = (character: Character) => {
     setSelectedCharacter(character);

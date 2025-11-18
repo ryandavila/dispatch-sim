@@ -48,12 +48,11 @@ describe('useAgentProgress', () => {
 
   it('should initialize with base agents when no progress saved', () => {
     const { result } = renderHook(() => useAgentProgress());
-    const agents = result.current.getAgentsWithProgress();
 
-    expect(agents).toHaveLength(2);
-    expect(agents[0].name).toBe('Test Agent 1');
-    expect(agents[0].level).toBe(1);
-    expect(agents[0].experience).toBe(50);
+    expect(result.current.agents).toHaveLength(2);
+    expect(result.current.agents[0].name).toBe('Test Agent 1');
+    expect(result.current.agents[0].level).toBe(1);
+    expect(result.current.agents[0].experience).toBe(50);
   });
 
   it('should load agent progress from localStorage', () => {
@@ -68,12 +67,11 @@ describe('useAgentProgress', () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(savedProgress));
 
     const { result } = renderHook(() => useAgentProgress());
-    const agents = result.current.getAgentsWithProgress();
 
-    expect(agents[0].level).toBe(2);
-    expect(agents[0].experience).toBe(200);
-    expect(agents[0].availablePoints).toBe(3);
-    expect(agents[0].stats.Combat).toBe(3);
+    expect(result.current.agents[0].level).toBe(2);
+    expect(result.current.agents[0].experience).toBe(200);
+    expect(result.current.agents[0].availablePoints).toBe(3);
+    expect(result.current.agents[0].stats.Combat).toBe(3);
   });
 
   it('should award experience to agents', () => {
@@ -83,8 +81,7 @@ describe('useAgentProgress', () => {
       result.current.awardExperience(['agent-1'], 100);
     });
 
-    const agents = result.current.getAgentsWithProgress();
-    expect(agents[0].experience).toBe(150); // 50 base + 100 awarded
+    expect(result.current.agents[0].experience).toBe(150); // 50 base + 100 awarded
   });
 
   it('should level up agents when they gain enough XP', () => {
@@ -96,10 +93,9 @@ describe('useAgentProgress', () => {
       result.current.awardExperience(['agent-1'], 150);
     });
 
-    const agents = result.current.getAgentsWithProgress();
-    expect(agents[0].level).toBe(2);
-    expect(agents[0].experience).toBe(200);
-    expect(agents[0].availablePoints).toBe(3); // 2 starting + 1 for level up
+    expect(result.current.agents[0].level).toBe(2);
+    expect(result.current.agents[0].experience).toBe(200);
+    expect(result.current.agents[0].availablePoints).toBe(3); // 2 starting + 1 for level up
   });
 
   it('should level up multiple levels at once', () => {
@@ -111,10 +107,9 @@ describe('useAgentProgress', () => {
       result.current.awardExperience(['agent-1'], 400);
     });
 
-    const agents = result.current.getAgentsWithProgress();
-    expect(agents[0].level).toBe(3);
-    expect(agents[0].experience).toBe(450);
-    expect(agents[0].availablePoints).toBe(4); // 2 starting + 2 for 2 levels
+    expect(result.current.agents[0].level).toBe(3);
+    expect(result.current.agents[0].experience).toBe(450);
+    expect(result.current.agents[0].availablePoints).toBe(4); // 2 starting + 2 for 2 levels
   });
 
   it('should award XP to multiple agents', () => {
@@ -124,15 +119,13 @@ describe('useAgentProgress', () => {
       result.current.awardExperience(['agent-1', 'agent-2'], 100);
     });
 
-    const agents = result.current.getAgentsWithProgress();
-    expect(agents[0].experience).toBe(150);
-    expect(agents[1].experience).toBe(150);
+    expect(result.current.agents[0].experience).toBe(150);
+    expect(result.current.agents[1].experience).toBe(150);
   });
 
   it('should update agent stats and persist them', () => {
     const { result } = renderHook(() => useAgentProgress());
-    const agents = result.current.getAgentsWithProgress();
-    const agent = agents[0];
+    const agent = result.current.agents[0];
 
     const updatedAgent: Character = {
       ...agent,
@@ -147,9 +140,8 @@ describe('useAgentProgress', () => {
       result.current.updateAgentStats(updatedAgent);
     });
 
-    const updatedAgents = result.current.getAgentsWithProgress();
-    expect(updatedAgents[0].stats.Combat).toBe(3); // 2 base + 1
-    expect(updatedAgents[0].availablePoints).toBe(1); // 2 - 1
+    expect(result.current.agents[0].stats.Combat).toBe(3); // 2 base + 1
+    expect(result.current.agents[0].availablePoints).toBe(1); // 2 - 1
   });
 
   it('should persist agent progress to localStorage', () => {
@@ -172,16 +164,14 @@ describe('useAgentProgress', () => {
       result.current.awardExperience(['agent-1'], 200);
     });
 
-    let agents = result.current.getAgentsWithProgress();
-    expect(agents[0].experience).toBe(250);
+    expect(result.current.agents[0].experience).toBe(250);
 
     act(() => {
       result.current.resetAgentProgress();
     });
 
-    agents = result.current.getAgentsWithProgress();
-    expect(agents[0].experience).toBe(50); // Back to base
-    expect(agents[0].level).toBe(1);
+    expect(result.current.agents[0].experience).toBe(50); // Back to base
+    expect(result.current.agents[0].level).toBe(1);
 
     // After reset, localStorage should be removed (check is null or empty)
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -190,8 +180,7 @@ describe('useAgentProgress', () => {
 
   it('should preserve stat changes when awarding XP', () => {
     const { result } = renderHook(() => useAgentProgress());
-    const agents = result.current.getAgentsWithProgress();
-    const agent = agents[0];
+    const agent = result.current.agents[0];
 
     // First, update stats
     const updatedAgent: Character = {
@@ -212,8 +201,7 @@ describe('useAgentProgress', () => {
       result.current.awardExperience(['agent-1'], 100);
     });
 
-    const finalAgents = result.current.getAgentsWithProgress();
-    expect(finalAgents[0].stats.Combat).toBe(4); // 2 + 2, preserved
-    expect(finalAgents[0].experience).toBe(150);
+    expect(result.current.agents[0].stats.Combat).toBe(4); // 2 + 2, preserved
+    expect(result.current.agents[0].experience).toBe(150);
   });
 });

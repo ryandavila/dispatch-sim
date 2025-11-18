@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Character } from '../types/character';
 import { applyExperience } from '../types/character';
 import type { StatPool } from '../types/stats';
@@ -38,9 +38,10 @@ export function useAgentProgress() {
   }, [agentProgress]);
 
   /**
-   * Get agents with their current progress applied
+   * Memoized agents with their current progress applied
+   * Only recalculates when agentProgress changes
    */
-  const getAgentsWithProgress = useCallback((): Character[] => {
+  const agents = useMemo((): Character[] => {
     const baseAgents = loadAgents();
     return baseAgents.map((agent) => {
       const progress = agentProgress[agent.id];
@@ -116,7 +117,7 @@ export function useAgentProgress() {
   }, []);
 
   return {
-    getAgentsWithProgress,
+    agents,
     awardExperience,
     updateAgentStats,
     resetAgentProgress,

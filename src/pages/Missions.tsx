@@ -19,8 +19,7 @@ type MissionTab = 'available' | 'history';
 
 export function Missions() {
   const missions = loadMissions();
-  const { getAgentsWithProgress, awardExperience } = useAgentProgress();
-  const agents = getAgentsWithProgress();
+  const { agents, awardExperience } = useAgentProgress();
   const [selectedMission, setSelectedMission] = useState<Mission | null>(null);
   const [selectedAgents, setSelectedAgents] = useState<Character[]>([]);
   const [difficultyFilter, setDifficultyFilter] = useState<DifficultyFilter>('All');
