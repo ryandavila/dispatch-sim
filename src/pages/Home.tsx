@@ -47,6 +47,9 @@ export function Home() {
         <Link to="/missions" className="home-nav-button">
           View Missions
         </Link>
+        <Link to="/shift" className="home-nav-button">
+          Start Shift
+        </Link>
       </nav>
     </div>
   );

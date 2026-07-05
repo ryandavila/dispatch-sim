@@ -3,6 +3,7 @@ import './App.css';
 import { Home } from './pages/Home';
 import { Missions } from './pages/Missions';
 import { Roster } from './pages/Roster';
+import { Shift } from './pages/Shift';
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/roster" element={<Roster />} />
           <Route path="/missions" element={<Missions />} />
+          <Route path="/shift" element={<Shift />} />
         </Routes>
       </main>
     </div>
