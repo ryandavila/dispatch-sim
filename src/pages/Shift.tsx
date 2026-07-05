@@ -276,13 +276,21 @@ export function Shift() {
       </div>
 
       {ended && (
-        <ShiftReview
-          tally={shift.tally}
-          pendingMissions={shift.activeMissions.length}
-          rewards={shiftRewards}
-          statPointAgentName={statPointAgentName}
-          onNewShift={handleNewShift}
-        />
+        <>
+          <ShiftReview
+            tally={shift.tally}
+            pendingMissions={shift.activeMissions.length}
+            rewards={shiftRewards}
+            statPointAgentName={statPointAgentName}
+            onNewShift={handleNewShift}
+          />
+          {shift.activeMissions.length === 0 && userProgress.shiftSummaries.length > 0 && (
+            <div className="shift-history">
+              <h3>Campaign History</h3>
+              <ShiftHistorySection summaries={userProgress.shiftSummaries} allAgents={agents} />
+            </div>
+          )}
+        </>
       )}
 
       {!ended && (
