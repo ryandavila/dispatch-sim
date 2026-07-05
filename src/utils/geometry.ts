@@ -44,16 +44,78 @@ export function fullyEncompasses(characterStats: StatPool, missionRequirements: 
   return PILLARS.every((pillar) => characterStats[pillar] >= missionRequirements[pillar]);
 }
 
-// Calculate the minimum value for each pillar between two stat pools
-// (used for calculating intersection)
-function getIntersectionStats(stats1: StatPool, stats2: StatPool): StatPool {
-  return {
-    Combat: Math.min(stats1.Combat, stats2.Combat),
-    Vigor: Math.min(stats1.Vigor, stats2.Vigor),
-    Mobility: Math.min(stats1.Mobility, stats2.Mobility),
-    Charisma: Math.min(stats1.Charisma, stats2.Charisma),
-    Intellect: Math.min(stats1.Intellect, stats2.Intellect),
-  };
+const EPSILON = 1e-9;
+
+// Intersection point of the (infinite) lines through p1->p2 and p3->p4.
+// Returns null when the lines are parallel or collinear.
+function lineIntersection(p1: Point, p2: Point, p3: Point, p4: Point): Point | null {
+  const d1x = p2.x - p1.x;
+  const d1y = p2.y - p1.y;
+  const d2x = p4.x - p3.x;
+  const d2y = p4.y - p3.y;
+  const denominator = d1x * d2y - d1y * d2x;
+
+  if (Math.abs(denominator) < EPSILON) {
+    return null;
+  }
+
+  const t = ((p3.x - p1.x) * d2y - (p3.y - p1.y) * d2x) / denominator;
+  return { x: p1.x + t * d1x, y: p1.y + t * d1y };
+}
+
+/**
+ * Exact area of the intersection of two radar pentagons.
+ *
+ * Both polygons are star-shaped around the origin with vertices on the same
+ * five axes, so within each angular sector between adjacent axes every
+ * boundary is a single edge. Per sector, the intersection is bounded by
+ * whichever edge is radially inner at each axis, plus (when the inner polygon
+ * differs between the two axes) the single point where the edges cross.
+ */
+export function calculatePentagonIntersectionArea(
+  statsA: StatPool,
+  statsB: StatPool,
+  maxValue: number = 10,
+  radius: number = 100
+): number {
+  const verticesA = calculatePentagonVertices(statsA, maxValue, radius);
+  const verticesB = calculatePentagonVertices(statsB, maxValue, radius);
+  const origin: Point = { x: 0, y: 0 };
+  const count = PILLARS.length;
+  let totalArea = 0;
+
+  for (let i = 0; i < count; i++) {
+    const j = (i + 1) % count;
+
+    // A polygon with a vertex at the origin has no interior in the sectors
+    // adjacent to that axis, so the intersection there is empty.
+    const startMin = Math.min(statsA[PILLARS[i]], statsB[PILLARS[i]]);
+    const endMin = Math.min(statsA[PILLARS[j]], statsB[PILLARS[j]]);
+    if (startMin <= 0 || endMin <= 0) {
+      continue;
+    }
+
+    const aInnerAtStart = statsA[PILLARS[i]] <= statsB[PILLARS[i]];
+    const aInnerAtEnd = statsA[PILLARS[j]] <= statsB[PILLARS[j]];
+    const startVertex = aInnerAtStart ? verticesA[i] : verticesB[i];
+    const endVertex = aInnerAtEnd ? verticesA[j] : verticesB[j];
+
+    const sectorBoundary: Point[] = [origin, startVertex];
+    if (aInnerAtStart !== aInnerAtEnd) {
+      // The inner polygon switches within this sector, so the two edges cross
+      // exactly once between the axes. Collinear edges fall back to the
+      // triangle of inner vertices, which spans the same region.
+      const crossing = lineIntersection(verticesA[i], verticesA[j], verticesB[i], verticesB[j]);
+      if (crossing !== null) {
+        sectorBoundary.push(crossing);
+      }
+    }
+    sectorBoundary.push(endVertex);
+
+    totalArea += calculatePolygonArea(sectorBoundary);
+  }
+
+  return totalArea;
 }
 
 // Calculate success probability based on area overlap
@@ -76,10 +138,12 @@ export function calculateSuccessProbability(
     return 1.0;
   }
 
-  // Calculate intersection (minimum of each pillar)
-  const intersectionStats = getIntersectionStats(characterStats, missionRequirements);
-  const intersectionVertices = calculatePentagonVertices(intersectionStats, maxValue);
-  const intersectionArea = calculatePolygonArea(intersectionVertices);
+  // Exact polygon intersection between the character and mission pentagons
+  const intersectionArea = calculatePentagonIntersectionArea(
+    characterStats,
+    missionRequirements,
+    maxValue
+  );
 
   // Success probability = intersection area / mission area
   return Math.min(intersectionArea / missionArea, 1.0);
