@@ -3,8 +3,8 @@
  */
 
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
+import { describe, expect, it, vi } from 'vitest';
 import { Roster } from './Roster';
 
 // Mock the hooks
