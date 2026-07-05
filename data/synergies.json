@@ -1,0 +1,6 @@
+[
+  { "agents": ["sonar", "malevola"] },
+  { "agents": ["punch-up", "coupe"] },
+  { "agents": ["flambae", "prism"] },
+  { "agents": ["invisigal", "golem"] }
+]

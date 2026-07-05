@@ -42,8 +42,26 @@ describe('useUserProgress', () => {
 
     const { result } = renderHook(() => useUserProgress());
 
-    // Older saves are merged over defaults, picking up new fields like medKits
-    expect(result.current.userProgress).toEqual({ ...savedProgress, medKits: 3 });
+    expect(result.current.userProgress).toMatchObject(savedProgress);
+  });
+
+  it('should fill in defaults for fields missing from older saves', () => {
+    // Save from before med kits/synergy/pity existed
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        completedMissionIds: [],
+        missionCompletions: [],
+        totalExperience: 50,
+      })
+    );
+
+    const { result } = renderHook(() => useUserProgress());
+
+    expect(result.current.userProgress.totalExperience).toBe(50);
+    expect(result.current.userProgress.medKits).toBe(3);
+    expect(result.current.userProgress.synergyDispatchCounts).toEqual({});
+    expect(result.current.userProgress.pityRemaining).toBe(3);
   });
 
   it('should add mission completion and update total XP', () => {
@@ -228,6 +246,46 @@ describe('useUserProgress', () => {
     });
 
     expect(result.current.userProgress.medKits).toBe(2);
+  });
+
+  it('should track synergy dispatch counts per pair', () => {
+    const { result } = renderHook(() => useUserProgress());
+
+    act(() => {
+      result.current.recordSynergyDispatch(['malevola+sonar']);
+    });
+    act(() => {
+      result.current.recordSynergyDispatch(['malevola+sonar', 'coupe+punch-up']);
+    });
+
+    expect(result.current.userProgress.synergyDispatchCounts).toEqual({
+      'malevola+sonar': 2,
+      'coupe+punch-up': 1,
+    });
+  });
+
+  it('should not update state when no synergy pairs deployed', () => {
+    const { result } = renderHook(() => useUserProgress());
+
+    act(() => {
+      result.current.recordSynergyDispatch([]);
+    });
+
+    expect(result.current.userProgress.synergyDispatchCounts).toEqual({});
+  });
+
+  it('should start with 3 pity charges and decrement without going negative', () => {
+    const { result } = renderHook(() => useUserProgress());
+
+    expect(result.current.userProgress.pityRemaining).toBe(3);
+
+    for (let i = 0; i < 5; i++) {
+      act(() => {
+        result.current.consumePity();
+      });
+    }
+
+    expect(result.current.userProgress.pityRemaining).toBe(0);
   });
 
   it('should handle corrupted localStorage data gracefully', () => {

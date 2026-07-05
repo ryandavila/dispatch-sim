@@ -240,6 +240,94 @@ describe('useActiveMissions', () => {
     expect(result.current.completedMissions[0].outcome.success).toBe(false);
   });
 
+  it('should apply the floor so a weak team rolls at 15%', () => {
+    const weakAgent: Character = {
+      ...mockAgent,
+      stats: { Combat: 1, Vigor: 1, Mobility: 1, Charisma: 1, Intellect: 1 },
+    };
+    const { result } = renderHook(() => useActiveMissions({ rng: () => 0.1 }));
+
+    act(() => {
+      result.current.deployMission(mockMission, [weakAgent]);
+    });
+
+    const { outcome } = result.current.activeMissions[0];
+    // Geometric probability (~4%) is raised to the 15% floor
+    expect(outcome.probability).toBe(0.15);
+    expect(outcome.success).toBe(true); // roll 0.1 < 0.15
+  });
+
+  it('should cap Hard missions at 85% and let synergy push past the cap', () => {
+    const sonar: Character = { ...mockAgent, id: 'sonar', name: 'Sonar' };
+    const malevola: Character = { ...mockAgent, id: 'malevola', name: 'Malevola' };
+    const onDeployRolled = vi.fn();
+    const { result } = renderHook(() =>
+      useActiveMissions({
+        rng: () => 0.5,
+        // Dispatched together 3 times — synergy level 1, +5%
+        getSynergyDispatchCount: (pairKey) => (pairKey === 'malevola+sonar' ? 3 : 0),
+        onDeployRolled,
+      })
+    );
+
+    act(() => {
+      // Full coverage (base 1.0) capped to 0.85 on Hard, then +5% synergy
+      result.current.deployMission({ ...mockMission, difficulty: 'Hard' }, [sonar, malevola]);
+    });
+
+    expect(result.current.activeMissions[0].outcome.probability).toBeCloseTo(0.9);
+    expect(onDeployRolled).toHaveBeenCalledWith({
+      synergyPairKeys: ['malevola+sonar'],
+      pityUsed: false,
+    });
+  });
+
+  it('should force success via pity on a would-be failure and report it', () => {
+    const strongAgent: Character = {
+      ...mockAgent,
+      stats: { Combat: 9, Vigor: 9, Mobility: 9, Charisma: 9, Intellect: 9 },
+    };
+    const highBarMission: Mission = {
+      ...mockMission,
+      requirements: { Combat: 10, Vigor: 10, Mobility: 10, Charisma: 10, Intellect: 10 },
+    };
+    const onDeployRolled = vi.fn();
+    const { result } = renderHook(() =>
+      useActiveMissions({ rng: () => 0.99, pityRemaining: 3, onDeployRolled })
+    );
+
+    act(() => {
+      result.current.deployMission(highBarMission, [strongAgent]);
+    });
+
+    const { outcome } = result.current.activeMissions[0];
+    // 81% chance (> 76%) and roll 0.99 would fail, but pity guarantees success
+    expect(outcome.probability).toBeCloseTo(0.81);
+    expect(outcome.success).toBe(true);
+    expect(outcome.pityUsed).toBe(true);
+    expect(onDeployRolled).toHaveBeenCalledWith({ synergyPairKeys: [], pityUsed: true });
+  });
+
+  it('should not use pity when no charges remain', () => {
+    const strongAgent: Character = {
+      ...mockAgent,
+      stats: { Combat: 9, Vigor: 9, Mobility: 9, Charisma: 9, Intellect: 9 },
+    };
+    const highBarMission: Mission = {
+      ...mockMission,
+      requirements: { Combat: 10, Vigor: 10, Mobility: 10, Charisma: 10, Intellect: 10 },
+    };
+    const { result } = renderHook(() => useActiveMissions({ rng: () => 0.99, pityRemaining: 0 }));
+
+    act(() => {
+      result.current.deployMission(highBarMission, [strongAgent]);
+    });
+
+    const { outcome } = result.current.activeMissions[0];
+    expect(outcome.success).toBe(false);
+    expect(outcome.pityUsed).toBe(false);
+  });
+
   it('should calculate correct mission duration with flight speed', () => {
     const flyingAgent: Character = {
       ...mockAgent,

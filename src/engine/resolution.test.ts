@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { StatPool } from '../types/stats';
 import {
+  applyProbabilityModifiers,
   calculateTeamSuccessProbability,
   combineTeamStats,
+  type ProbabilityModifierInput,
   resolveMissionOutcome,
 } from './resolution';
 
@@ -169,6 +171,124 @@ describe('calculateTeamSuccessProbability', () => {
   });
 });
 
+describe('applyProbabilityModifiers', () => {
+  const baseInput = (overrides: Partial<ProbabilityModifierInput>): ProbabilityModifierInput => ({
+    baseProbability: 0.5,
+    difficulty: 'Easy',
+    synergyLevels: [],
+    pityRemaining: 0,
+    teamSize: 2,
+    ...overrides,
+  });
+
+  it('should leave a mid-range probability untouched with no modifiers', () => {
+    const result = applyProbabilityModifiers(baseInput({ baseProbability: 0.5 }));
+
+    expect(result.probability).toBe(0.5);
+    expect(result.synergyBonus).toBe(0);
+    expect(result.pityApplies).toBe(false);
+  });
+
+  it('should keep an empty team at 0% regardless of other modifiers', () => {
+    const result = applyProbabilityModifiers(
+      baseInput({ baseProbability: 1, synergyLevels: [3], pityRemaining: 3, teamSize: 0 })
+    );
+
+    expect(result.probability).toBe(0);
+    expect(result.synergyBonus).toBe(0);
+    expect(result.pityApplies).toBe(false);
+  });
+
+  it('should cap Hard and Extreme missions at 85%', () => {
+    expect(
+      applyProbabilityModifiers(baseInput({ baseProbability: 1, difficulty: 'Hard' })).probability
+    ).toBe(0.85);
+    expect(
+      applyProbabilityModifiers(baseInput({ baseProbability: 0.9, difficulty: 'Extreme' }))
+        .probability
+    ).toBe(0.85);
+  });
+
+  it('should not cap Easy or Medium missions', () => {
+    expect(
+      applyProbabilityModifiers(baseInput({ baseProbability: 1, difficulty: 'Easy' })).probability
+    ).toBe(1);
+    expect(
+      applyProbabilityModifiers(baseInput({ baseProbability: 0.95, difficulty: 'Medium' }))
+        .probability
+    ).toBe(0.95);
+  });
+
+  it('should add +5%/+10%/+15% synergy for levels 1/2/3', () => {
+    expect(
+      applyProbabilityModifiers(baseInput({ baseProbability: 0.5, synergyLevels: [1] })).probability
+    ).toBeCloseTo(0.55);
+    expect(
+      applyProbabilityModifiers(baseInput({ baseProbability: 0.5, synergyLevels: [2] })).probability
+    ).toBeCloseTo(0.6);
+    expect(
+      applyProbabilityModifiers(baseInput({ baseProbability: 0.5, synergyLevels: [3] })).probability
+    ).toBeCloseTo(0.65);
+  });
+
+  it('should stack synergy bonuses from multiple duos', () => {
+    const result = applyProbabilityModifiers(
+      baseInput({ baseProbability: 0.5, synergyLevels: [1, 2], teamSize: 4 })
+    );
+
+    expect(result.synergyBonus).toBeCloseTo(0.15);
+    expect(result.probability).toBeCloseTo(0.65);
+  });
+
+  it('should apply the hard-call cap before synergy so synergy pushes past it', () => {
+    // Capped to 0.85, then +10% synergy = 0.95
+    const result = applyProbabilityModifiers(
+      baseInput({ baseProbability: 1, difficulty: 'Hard', synergyLevels: [2] })
+    );
+
+    expect(result.probability).toBeCloseTo(0.95);
+  });
+
+  it('should never exceed 100% after synergy', () => {
+    const result = applyProbabilityModifiers(
+      baseInput({ baseProbability: 0.98, synergyLevels: [3] })
+    );
+
+    expect(result.probability).toBe(1);
+  });
+
+  it('should raise low probabilities to the 15% floor', () => {
+    expect(applyProbabilityModifiers(baseInput({ baseProbability: 0.05 })).probability).toBe(0.15);
+    expect(
+      applyProbabilityModifiers(baseInput({ baseProbability: 0, teamSize: 1 })).probability
+    ).toBe(0.15);
+  });
+
+  it('should flag pity only above 76% with charges remaining', () => {
+    expect(
+      applyProbabilityModifiers(baseInput({ baseProbability: 0.8, pityRemaining: 3 })).pityApplies
+    ).toBe(true);
+    // Exactly 76% is not protected
+    expect(
+      applyProbabilityModifiers(baseInput({ baseProbability: 0.76, pityRemaining: 3 })).pityApplies
+    ).toBe(false);
+    // No charges left
+    expect(
+      applyProbabilityModifiers(baseInput({ baseProbability: 0.9, pityRemaining: 0 })).pityApplies
+    ).toBe(false);
+  });
+
+  it('should evaluate pity against the final modified probability', () => {
+    // 0.74 base + 5% synergy = 0.79 > 76% — pity protects it
+    const result = applyProbabilityModifiers(
+      baseInput({ baseProbability: 0.74, synergyLevels: [1], pityRemaining: 1 })
+    );
+
+    expect(result.probability).toBeCloseTo(0.79);
+    expect(result.pityApplies).toBe(true);
+  });
+});
+
 describe('resolveMissionOutcome', () => {
   it('should succeed when the roll is below the probability', () => {
     const outcome = resolveMissionOutcome(0.6, () => 0.5);
@@ -195,5 +315,25 @@ describe('resolveMissionOutcome', () => {
   it('should always fail at 0% probability', () => {
     expect(resolveMissionOutcome(0, () => 0).success).toBe(false);
     expect(resolveMissionOutcome(0, () => 0.999999).success).toBe(false);
+  });
+
+  it('should not use pity by default', () => {
+    expect(resolveMissionOutcome(0.6, () => 0.5).pityUsed).toBe(false);
+  });
+
+  it('should force success on a would-be failure when pity applies', () => {
+    // roll 0.9 >= 0.8 would fail, but pity guarantees success
+    const outcome = resolveMissionOutcome(0.8, () => 0.9, true);
+
+    expect(outcome.success).toBe(true);
+    expect(outcome.pityUsed).toBe(true);
+    expect(outcome.roll).toBe(0.9);
+  });
+
+  it('should mark pity as used even when the roll would have succeeded', () => {
+    const outcome = resolveMissionOutcome(0.8, () => 0.1, true);
+
+    expect(outcome.success).toBe(true);
+    expect(outcome.pityUsed).toBe(true);
   });
 });

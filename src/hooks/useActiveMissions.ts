@@ -1,7 +1,12 @@
 import { useEffect, useState } from 'react';
 import { getEffectiveStats } from '../engine/injury';
-import { calculateTeamSuccessProbability, resolveMissionOutcome } from '../engine/resolution';
+import {
+  applyProbabilityModifiers,
+  calculateTeamSuccessProbability,
+  resolveMissionOutcome,
+} from '../engine/resolution';
 import type { Rng } from '../engine/rng';
+import { getTeamSynergies, synergyPairKey } from '../engine/synergy';
 import type { ActiveMission } from '../types/activeMission';
 import { calculateMissionProgress, createActiveMission } from '../types/activeMission';
 import type { Character } from '../types/character';
@@ -16,13 +21,32 @@ export interface CompletedMission extends ActiveMission {
   completedAt: number;
 }
 
+export interface DeployRollInfo {
+  /** synergyPairKey of each synergy duo that deployed together. */
+  synergyPairKeys: string[];
+  /** True when the pity guarantee fired on this roll. */
+  pityUsed: boolean;
+}
+
 interface UseActiveMissionsOptions {
   onMissionComplete?: (mission: ActiveMission) => void;
   rng?: Rng; // Injectable for deterministic tests
+  /** Times a synergy duo (by synergyPairKey) has deployed together. */
+  getSynergyDispatchCount?: (pairKey: string) => number;
+  /** Remaining guaranteed-success pity charges. */
+  pityRemaining?: number;
+  /** Called after each deploy roll so synergy counts and pity can be persisted. */
+  onDeployRolled?: (info: DeployRollInfo) => void;
 }
 
 export function useActiveMissions(options: UseActiveMissionsOptions = {}) {
-  const { onMissionComplete, rng = Math.random } = options;
+  const {
+    onMissionComplete,
+    rng = Math.random,
+    getSynergyDispatchCount,
+    pityRemaining = 0,
+    onDeployRolled,
+  } = options;
   const [activeMissions, setActiveMissions] = useState<ActiveMission[]>([]);
   const [completedMissions, setCompletedMissions] = useState<CompletedMission[]>([]);
   const [currentTime, setCurrentTime] = useState(Date.now());
@@ -82,12 +106,29 @@ export function useActiveMissions(options: UseActiveMissionsOptions = {}) {
   const deployMission = (mission: Mission, agents: Character[]) => {
     const timeBreakdown = getMissionTimeBreakdown(mission, agents);
 
+    const teamSynergies = getTeamSynergies(
+      agents.map((agent) => agent.id),
+      (pairKey) => getSynergyDispatchCount?.(pairKey) ?? 0
+    );
+
     // Injuries reduce effective stats, so they also reduce the roll's odds
-    const probability = calculateTeamSuccessProbability(
+    const baseProbability = calculateTeamSuccessProbability(
       agents.map((agent) => getEffectiveStats(agent)),
       mission.requirements
     );
-    const outcome = resolveMissionOutcome(probability, rng);
+    const { probability, pityApplies } = applyProbabilityModifiers({
+      baseProbability,
+      difficulty: mission.difficulty,
+      synergyLevels: teamSynergies.map((synergy) => synergy.level),
+      pityRemaining,
+      teamSize: agents.length,
+    });
+    const outcome = resolveMissionOutcome(probability, rng, pityApplies);
+
+    onDeployRolled?.({
+      synergyPairKeys: teamSynergies.map(({ pair }) => synergyPairKey(pair[0], pair[1])),
+      pityUsed: pityApplies,
+    });
 
     const newActiveMission = createActiveMission(
       mission,

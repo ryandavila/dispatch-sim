@@ -1263,6 +1263,23 @@
   font-size: 0.85rem;
 }
 
+.synergy-indicators {
+  margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.synergy-indicator {
+  padding: 0.5rem 0.75rem;
+  background: rgba(217, 119, 6, 0.1);
+  border-left: 3px solid #d97706;
+  border-radius: 4px;
+  color: #b45309;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
 /* Completed Mission Cards */
 .mission-card.completed {
   cursor: default;

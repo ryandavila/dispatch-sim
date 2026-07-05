@@ -1,5 +1,6 @@
 import { getEffectiveStats, isDowned } from '../engine/injury';
 import { combineTeamStats } from '../engine/resolution';
+import { getSynergyBonus, synergyPairKey, type TeamSynergy } from '../engine/synergy';
 import type { Character } from '../types/character';
 import type { Mission } from '../types/mission';
 import type { getMissionTimeBreakdown } from '../utils/missionTime';
@@ -12,6 +13,8 @@ interface MissionDetailsSectionProps {
   selectedAgents: Character[];
   allAgents: Character[];
   successProbability: number;
+  /** Synergy duos on the selected team that currently grant a bonus. */
+  activeSynergies: TeamSynergy[];
   missionTimeBreakdown: ReturnType<typeof getMissionTimeBreakdown> | null;
   isAgentAvailable: (agentId: string) => boolean;
   onToggleAgent: (agent: Character) => void;
@@ -24,12 +27,16 @@ export function MissionDetailsSection({
   selectedAgents,
   allAgents,
   successProbability,
+  activeSynergies,
   missionTimeBreakdown,
   isAgentAvailable,
   onToggleAgent,
   onDeployMission,
   getSuccessColor,
 }: MissionDetailsSectionProps) {
+  const agentName = (agentId: string) =>
+    allAgents.find((agent) => agent.id === agentId)?.name ?? agentId;
+
   return (
     <div className="mission-details">
       <h3>Mission Requirements</h3>
@@ -77,6 +84,17 @@ export function MissionDetailsSection({
           >
             Success Probability: {(successProbability * 100).toFixed(0)}%
           </div>
+
+          {activeSynergies.length > 0 && (
+            <div className="synergy-indicators">
+              {activeSynergies.map(({ pair, level }) => (
+                <div key={synergyPairKey(pair[0], pair[1])} className="synergy-indicator">
+                  Synergy: {agentName(pair[0])} + {agentName(pair[1])} (Lv {level}, +
+                  {Math.round(getSynergyBonus(level) * 100)}%)
+                </div>
+              ))}
+            </div>
+          )}
 
           {missionTimeBreakdown && missionTimeBreakdown.totalTime > 0 && (
             <>

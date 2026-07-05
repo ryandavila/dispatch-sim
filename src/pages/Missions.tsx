@@ -5,7 +5,8 @@ import { MissionDetailsSection } from '../components/MissionDetailsSection';
 import { MissionHistorySection } from '../components/MissionHistorySection';
 import { MissionList } from '../components/MissionList';
 import { getEffectiveStats, isDowned } from '../engine/injury';
-import { calculateTeamSuccessProbability } from '../engine/resolution';
+import { applyProbabilityModifiers, calculateTeamSuccessProbability } from '../engine/resolution';
+import { getTeamSynergies } from '../engine/synergy';
 import { useActiveMissions } from '../hooks/useActiveMissions';
 import { useAgentProgress } from '../hooks/useAgentProgress';
 import { useUserProgress } from '../hooks/useUserProgress';
@@ -25,7 +26,13 @@ export function Missions() {
   const [selectedAgents, setSelectedAgents] = useState<Character[]>([]);
   const [difficultyFilter, setDifficultyFilter] = useState<DifficultyFilter>('All');
   const [activeTab, setActiveTab] = useState<MissionTab>('available');
-  const { userProgress, addMissionCompletion, isMissionCompleted } = useUserProgress();
+  const {
+    userProgress,
+    addMissionCompletion,
+    recordSynergyDispatch,
+    consumePity,
+    isMissionCompleted,
+  } = useUserProgress();
 
   const handleMissionComplete = useCallback(
     (activeMission: import('../types/activeMission').ActiveMission) => {
@@ -53,7 +60,17 @@ export function Missions() {
   );
 
   const { activeMissions, completedMissions, currentTime, deployMission, isAgentAvailable } =
-    useActiveMissions({ onMissionComplete: handleMissionComplete });
+    useActiveMissions({
+      onMissionComplete: handleMissionComplete,
+      getSynergyDispatchCount: (pairKey) => userProgress.synergyDispatchCounts[pairKey] ?? 0,
+      pityRemaining: userProgress.pityRemaining,
+      onDeployRolled: ({ synergyPairKeys, pityUsed }) => {
+        recordSynergyDispatch(synergyPairKeys);
+        if (pityUsed) {
+          consumePity();
+        }
+      },
+    });
 
   const handleMissionSelect = (mission: Mission) => {
     setSelectedMission(mission);
@@ -95,11 +112,23 @@ export function Missions() {
     return filtered;
   }, [missions, difficultyFilter, isMissionCompleted]);
 
+  // Same modifier layer as the deploy roll, so what's shown is what's rolled
+  const teamSynergies = getTeamSynergies(
+    selectedAgents.map((a) => a.id),
+    (pairKey) => userProgress.synergyDispatchCounts[pairKey] ?? 0
+  );
+
   const successProbability = selectedMission
-    ? calculateTeamSuccessProbability(
-        selectedAgents.map((a) => getEffectiveStats(a)),
-        selectedMission.requirements
-      )
+    ? applyProbabilityModifiers({
+        baseProbability: calculateTeamSuccessProbability(
+          selectedAgents.map((a) => getEffectiveStats(a)),
+          selectedMission.requirements
+        ),
+        difficulty: selectedMission.difficulty,
+        synergyLevels: teamSynergies.map((synergy) => synergy.level),
+        pityRemaining: userProgress.pityRemaining,
+        teamSize: selectedAgents.length,
+      }).probability
     : 0;
 
   const missionTimeBreakdown = selectedMission
@@ -221,6 +250,7 @@ export function Missions() {
               selectedAgents={selectedAgents}
               allAgents={agents}
               successProbability={successProbability}
+              activeSynergies={teamSynergies.filter((synergy) => synergy.level > 0)}
               missionTimeBreakdown={missionTimeBreakdown}
               isAgentAvailable={isAgentAvailable}
               onToggleAgent={toggleAgentSelection}

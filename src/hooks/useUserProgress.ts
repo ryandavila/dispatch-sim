@@ -14,7 +14,7 @@ export function useUserProgress() {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       try {
-        // Merge over defaults so older saves pick up new fields (e.g. medKits)
+        // Merge over defaults so saves from before a field existed stay loadable
         return { ...INITIAL_USER_PROGRESS, ...JSON.parse(stored) };
       } catch (error) {
         console.error('Failed to parse user progress from localStorage:', error);
@@ -55,6 +55,26 @@ export function useUserProgress() {
     return true;
   };
 
+  /** Record that each given synergy pair (by synergyPairKey) deployed together. */
+  const recordSynergyDispatch = (pairKeys: string[]) => {
+    if (pairKeys.length === 0) return;
+    setUserProgress((prev) => {
+      const synergyDispatchCounts = { ...prev.synergyDispatchCounts };
+      for (const key of pairKeys) {
+        synergyDispatchCounts[key] = (synergyDispatchCounts[key] ?? 0) + 1;
+      }
+      return { ...prev, synergyDispatchCounts };
+    });
+  };
+
+  /** Spend one pity charge (when the pity guarantee fires on a deploy). */
+  const consumePity = () => {
+    setUserProgress((prev) => ({
+      ...prev,
+      pityRemaining: Math.max(0, prev.pityRemaining - 1),
+    }));
+  };
+
   const isMissionCompleted = (missionId: string): boolean => {
     return userProgress.completedMissionIds.includes(missionId);
   };
@@ -67,6 +87,8 @@ export function useUserProgress() {
     userProgress,
     addMissionCompletion,
     consumeMedKit,
+    recordSynergyDispatch,
+    consumePity,
     isMissionCompleted,
     resetProgress,
   };
