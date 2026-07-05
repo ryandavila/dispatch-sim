@@ -1,151 +1,57 @@
-import { useCallback, useMemo, useState } from 'react';
-import { ActiveMissionsSection } from '../components/ActiveMissionsSection';
-import { CompletedMissionsSection } from '../components/CompletedMissionsSection';
-import { MissionDetailsSection } from '../components/MissionDetailsSection';
+import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { MissionHistorySection } from '../components/MissionHistorySection';
 import { MissionList } from '../components/MissionList';
-import { getEffectiveStats, isDowned } from '../engine/injury';
-import { applyProbabilityModifiers, calculateTeamSuccessProbability } from '../engine/resolution';
-import { getTeamSynergies } from '../engine/synergy';
-import { useActiveMissions } from '../hooks/useActiveMissions';
-import { useAgentProgress } from '../hooks/useAgentProgress';
+import { OverlayRadarChart } from '../components/OverlayRadarChart';
 import { useUserProgress } from '../hooks/useUserProgress';
-import type { Character } from '../types/character';
 import type { Mission } from '../types/mission';
+import { getDifficultyColor } from '../utils/colors';
 import { loadMissions } from '../utils/dataLoader';
-import { getMissionTimeBreakdown } from '../utils/missionTime';
 
 type DifficultyFilter = Mission['difficulty'] | 'All';
 
 type MissionTab = 'available' | 'history';
 
+const DIFFICULTIES: DifficultyFilter[] = ['All', 'Easy', 'Medium', 'Hard', 'Extreme'];
+
+/**
+ * Read-only mission catalog + completion history. Deploying heroes happens on a
+ * Shift (see /shift); this page is for browsing mission types and past results.
+ */
 export function Missions() {
   const missions = loadMissions();
-  const { agents, awardExperience, applyInjuries } = useAgentProgress();
   const [selectedMission, setSelectedMission] = useState<Mission | null>(null);
-  const [selectedAgents, setSelectedAgents] = useState<Character[]>([]);
   const [difficultyFilter, setDifficultyFilter] = useState<DifficultyFilter>('All');
   const [activeTab, setActiveTab] = useState<MissionTab>('available');
-  const {
-    userProgress,
-    addMissionCompletion,
-    recordSynergyDispatch,
-    consumePity,
-    isMissionCompleted,
-  } = useUserProgress();
+  const { userProgress, isMissionCompleted } = useUserProgress();
 
-  const handleMissionComplete = useCallback(
-    (activeMission: import('../types/activeMission').ActiveMission) => {
-      const { success } = activeMission.outcome;
-      const experienceGained = success ? activeMission.mission.rewards?.experience || 0 : 0;
-
-      addMissionCompletion({
-        missionId: activeMission.mission.id,
-        completedAt: Date.now(),
-        agents: activeMission.agents.map((a) => a.id),
-        experienceGained,
-        success,
-      });
-
-      const agentIds = activeMission.agents.map((a) => a.id);
-      if (success) {
-        // Agents only earn XP on success
-        awardExperience(agentIds, experienceGained);
-      } else {
-        // Failure injures the whole team; a second injury downs an agent
-        applyInjuries(agentIds);
-      }
-    },
-    [addMissionCompletion, awardExperience, applyInjuries]
-  );
-
-  const { activeMissions, completedMissions, currentTime, deployMission, isAgentAvailable } =
-    useActiveMissions({
-      onMissionComplete: handleMissionComplete,
-      getSynergyDispatchCount: (pairKey) => userProgress.synergyDispatchCounts[pairKey] ?? 0,
-      pityRemaining: userProgress.pityRemaining,
-      onDeployRolled: ({ synergyPairKeys, pityUsed }) => {
-        recordSynergyDispatch(synergyPairKeys);
-        if (pityUsed) {
-          consumePity();
-        }
-      },
-    });
-
-  const handleMissionSelect = (mission: Mission) => {
-    setSelectedMission(mission);
-    setSelectedAgents([]); // Clear team when switching missions
-  };
-
-  const toggleAgentSelection = (agent: Character) => {
-    if (!selectedMission) return;
-    if (isDowned(agent)) return; // Downed agents can't be deployed until healed
-
-    setSelectedAgents((prev) => {
-      const isSelected = prev.some((a) => a.id === agent.id);
-      if (isSelected) {
-        return prev.filter((a) => a.id !== agent.id);
-      }
-      // Don't add if we've reached the limit
-      if (prev.length >= selectedMission.maxAgents) {
-        return prev;
-      }
-      return [...prev, agent];
-    });
-  };
-
-  const handleDeployMission = () => {
-    if (!selectedMission || selectedAgents.length === 0) return;
-
-    deployMission(selectedMission, selectedAgents);
-    setSelectedAgents([]);
-  };
-
-  // Filter missions by difficulty and exclude completed missions
+  // Not-yet-cleared missions, optionally narrowed by difficulty.
   const filteredMissions = useMemo(() => {
     let filtered = missions.filter((mission) => !isMissionCompleted(mission.id));
-
     if (difficultyFilter !== 'All') {
       filtered = filtered.filter((mission) => mission.difficulty === difficultyFilter);
     }
-
     return filtered;
   }, [missions, difficultyFilter, isMissionCompleted]);
-
-  // Same modifier layer as the deploy roll, so what's shown is what's rolled
-  const teamSynergies = getTeamSynergies(
-    selectedAgents.map((a) => a.id),
-    (pairKey) => userProgress.synergyDispatchCounts[pairKey] ?? 0
-  );
-
-  const successProbability = selectedMission
-    ? applyProbabilityModifiers({
-        baseProbability: calculateTeamSuccessProbability(
-          selectedAgents.map((a) => getEffectiveStats(a)),
-          selectedMission.requirements
-        ),
-        difficulty: selectedMission.difficulty,
-        synergyLevels: teamSynergies.map((synergy) => synergy.level),
-        pityRemaining: userProgress.pityRemaining,
-        teamSize: selectedAgents.length,
-      }).probability
-    : 0;
-
-  const missionTimeBreakdown = selectedMission
-    ? getMissionTimeBreakdown(selectedMission, selectedAgents)
-    : null;
 
   return (
     <div className="missions-page">
       <div className="missions-page-header">
-        <h2 className="missions-header">Missions</h2>
+        <h2 className="missions-header">Mission Catalog</h2>
         <div className="user-xp">
           <span className="xp-label">Total XP:</span>
           <span className="xp-value">{userProgress.totalExperience}</span>
         </div>
       </div>
 
-      {/* Mission Tabs */}
+      <p className="missions-browse-note">
+        Browse mission types and your history here. To deploy heroes, respond to calls on a{' '}
+        <Link to="/shift" className="inline-link">
+          Shift
+        </Link>
+        .
+      </p>
+
       <div className="mission-tabs">
         <button
           type="button"
@@ -165,76 +71,64 @@ export function Missions() {
 
       {activeTab === 'available' ? (
         <>
-          {/* Difficulty Filter */}
           <div className="mission-filters">
             <div className="filter-group">
               <span className="filter-label">Filter by Difficulty:</span>
               <div className="difficulty-filters">
-                <button
-                  type="button"
-                  onClick={() => setDifficultyFilter('All')}
-                  className={`difficulty-filter-button ${difficultyFilter === 'All' ? 'active' : ''}`}
-                >
-                  All
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDifficultyFilter('Easy')}
-                  className={`difficulty-filter-button ${difficultyFilter === 'Easy' ? 'active' : ''}`}
-                >
-                  Easy
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDifficultyFilter('Medium')}
-                  className={`difficulty-filter-button ${difficultyFilter === 'Medium' ? 'active' : ''}`}
-                >
-                  Medium
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDifficultyFilter('Hard')}
-                  className={`difficulty-filter-button ${difficultyFilter === 'Hard' ? 'active' : ''}`}
-                >
-                  Hard
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDifficultyFilter('Extreme')}
-                  className={`difficulty-filter-button ${difficultyFilter === 'Extreme' ? 'active' : ''}`}
-                >
-                  Extreme
-                </button>
+                {DIFFICULTIES.map((difficulty) => (
+                  <button
+                    key={difficulty}
+                    type="button"
+                    onClick={() => setDifficultyFilter(difficulty)}
+                    className={`difficulty-filter-button ${difficultyFilter === difficulty ? 'active' : ''}`}
+                  >
+                    {difficulty}
+                  </button>
+                ))}
               </div>
             </div>
           </div>
 
-          {/* Completed Missions */}
-          <CompletedMissionsSection completedMissions={completedMissions} />
-
-          {/* Active Missions */}
-          <ActiveMissionsSection activeMissions={activeMissions} currentTime={currentTime} />
-
-          {/* Mission List */}
           <MissionList
             missions={filteredMissions}
             selectedMission={selectedMission}
-            onMissionSelect={handleMissionSelect}
+            onMissionSelect={setSelectedMission}
           />
 
-          {/* Mission Details & Team Selection */}
           {selectedMission && (
-            <MissionDetailsSection
-              mission={selectedMission}
-              selectedAgents={selectedAgents}
-              allAgents={agents}
-              successProbability={successProbability}
-              activeSynergies={teamSynergies.filter((synergy) => synergy.level > 0)}
-              missionTimeBreakdown={missionTimeBreakdown}
-              isAgentAvailable={isAgentAvailable}
-              onToggleAgent={toggleAgentSelection}
-              onDeployMission={handleDeployMission}
-            />
+            <div className="mission-details">
+              <div className="mission-browse-header">
+                <h3>{selectedMission.name}</h3>
+                <span
+                  className="mission-difficulty"
+                  style={{ color: getDifficultyColor(selectedMission.difficulty) }}
+                >
+                  {selectedMission.difficulty}
+                </span>
+              </div>
+              {selectedMission.description && (
+                <p className="mission-browse-description">{selectedMission.description}</p>
+              )}
+              <div className="mission-chart">
+                <OverlayRadarChart
+                  layers={[
+                    {
+                      stats: selectedMission.requirements,
+                      color: 'rgba(217, 119, 6, 0.3)',
+                      label: 'Required',
+                      fillOpacity: 0.3,
+                    },
+                  ]}
+                  maxValue={10}
+                  size={300}
+                />
+              </div>
+              {selectedMission.rewards && (
+                <div className="mission-browse-reward">
+                  Reward: {selectedMission.rewards.experience} XP
+                </div>
+              )}
+            </div>
           )}
         </>
       ) : (

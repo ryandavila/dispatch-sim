@@ -20,10 +20,17 @@ import type { Character } from '../types/character';
 import type { Mission } from '../types/mission';
 import type { ShiftCall, ShiftConfig, ShiftEvent, ShiftState, ShiftTally } from '../types/shift';
 import { getMissionTimeBreakdown } from '../utils/missionTime';
-import type { DeployRollInfo } from './useActiveMissions';
 
 /** Wall-clock reader; the hook's only source of real time. */
 export type Clock = () => number;
+
+/** Emitted after each deploy roll so synergy counts and pity can be persisted. */
+export interface DeployRollInfo {
+  /** synergyPairKey of each synergy duo that deployed together. */
+  synergyPairKeys: string[];
+  /** True only when the pity guarantee actually converted a would-be failure. */
+  pityUsed: boolean;
+}
 
 // Mirrors useActiveMissions: 1 real second = 1 mission time unit.
 const TIME_SCALE = 1000;

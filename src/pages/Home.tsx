@@ -41,14 +41,14 @@ export function Home() {
       </div>
 
       <nav className="home-nav">
+        <Link to="/shift" className="home-nav-button primary">
+          Start Shift
+        </Link>
         <Link to="/roster" className="home-nav-button">
           View Roster
         </Link>
         <Link to="/missions" className="home-nav-button">
-          View Missions
-        </Link>
-        <Link to="/shift" className="home-nav-button">
-          Start Shift
+          Mission Catalog
         </Link>
       </nav>
     </div>

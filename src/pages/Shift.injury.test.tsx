@@ -3,11 +3,12 @@
  */
 
 import { act, render } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ActiveMission } from '../types/activeMission';
 import type { Character } from '../types/character';
 import type { Mission } from '../types/mission';
-import { Missions } from './Missions';
+import { Shift } from './Shift';
 
 const mockMission: Mission = {
   id: 'mission-1',
@@ -52,19 +53,28 @@ vi.mock('../utils/dataLoader', () => ({
   loadSynergies: vi.fn(() => []),
 }));
 
-// Capture the completion callback that Missions wires into useActiveMissions
+// Capture the completion callback Shift wires into useShift, so we can drive it
+// directly without simulating a full real-time shift.
 let capturedOnMissionComplete: ((mission: ActiveMission) => void) | undefined;
 
-vi.mock('../hooks/useActiveMissions', () => ({
-  useActiveMissions: (options: { onMissionComplete?: (mission: ActiveMission) => void } = {}) => {
+vi.mock('../hooks/useShift', () => ({
+  useShift: (options: { onMissionComplete?: (mission: ActiveMission) => void } = {}) => {
     capturedOnMissionComplete = options.onMissionComplete;
     return {
-      activeMissions: [],
-      completedMissions: [],
-      currentTime: Date.now(),
-      deployMission: vi.fn(),
-      isAgentAvailable: () => true,
-      removeMission: vi.fn(),
+      shift: {
+        phase: 'idle',
+        config: { seed: 1, shiftDurationMs: 1, maxOpenCalls: 1, callTimerMs: 1, spawnEveryMs: 1 },
+        shiftStartMs: 0,
+        calls: [],
+        activeMissions: [],
+        tally: { succeeded: 0, failed: 0, missed: 0 },
+        lastTickMs: 0,
+      },
+      now: 0,
+      start: vi.fn(),
+      deploy: vi.fn(),
+      pause: vi.fn(),
+      resume: vi.fn(),
     };
   },
 }));
@@ -90,7 +100,15 @@ function readAgentProgress() {
   return JSON.parse(localStorage.getItem('dispatch-sim-agent-progress-v2') ?? '{}');
 }
 
-describe('Missions - injury wiring on completion', () => {
+function renderShift() {
+  render(
+    <MemoryRouter>
+      <Shift />
+    </MemoryRouter>
+  );
+}
+
+describe('Shift - injury/XP wiring on completion', () => {
   beforeEach(() => {
     localStorage.clear();
     capturedOnMissionComplete = undefined;
@@ -101,7 +119,7 @@ describe('Missions - injury wiring on completion', () => {
   });
 
   it('injures every team member when a mission fails', () => {
-    render(<Missions />);
+    renderShift();
 
     act(() => {
       capturedOnMissionComplete?.(makeCompletedMission(false));
@@ -113,7 +131,7 @@ describe('Missions - injury wiring on completion', () => {
   });
 
   it('downs agents on a second failure', () => {
-    render(<Missions />);
+    renderShift();
 
     act(() => {
       capturedOnMissionComplete?.(makeCompletedMission(false));
@@ -128,7 +146,7 @@ describe('Missions - injury wiring on completion', () => {
   });
 
   it('does not injure agents and awards XP when a mission succeeds', () => {
-    render(<Missions />);
+    renderShift();
 
     act(() => {
       capturedOnMissionComplete?.(makeCompletedMission(true));
