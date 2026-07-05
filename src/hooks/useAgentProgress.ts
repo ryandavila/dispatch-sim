@@ -153,6 +153,42 @@ export function useAgentProgress() {
   }, []);
 
   /**
+   * Grant stat allocation points to a single agent (e.g. an end-of-shift
+   * reward). Creates a progress entry from the base agent if none exists.
+   * No-op for non-positive amounts. The points land in `availablePoints`
+   * for the player to spend; stats are not mutated here.
+   */
+  const grantAvailablePoints = useCallback((agentId: string, amount: number) => {
+    if (amount <= 0) {
+      return;
+    }
+    const baseAgents = loadAgents();
+    setAgentProgress((prev) => {
+      const current = prev[agentId];
+      if (current) {
+        return {
+          ...prev,
+          [agentId]: { ...current, availablePoints: current.availablePoints + amount },
+        };
+      }
+      const baseAgent = baseAgents.find((a) => a.id === agentId);
+      if (!baseAgent) {
+        return prev;
+      }
+      return {
+        ...prev,
+        [agentId]: {
+          level: baseAgent.level,
+          experience: baseAgent.experience,
+          availablePoints: baseAgent.availablePoints + amount,
+          stats: baseAgent.stats,
+          injuryCount: baseAgent.injuryCount ?? 0,
+        },
+      };
+    });
+  }, []);
+
+  /**
    * Clear all injuries on an agent (med-kit consumption is the caller's job).
    */
   const healAgent = useCallback((agentId: string) => {
@@ -178,6 +214,7 @@ export function useAgentProgress() {
     awardExperience,
     updateAgentStats,
     applyInjuries,
+    grantAvailablePoints,
     healAgent,
     resetAgentProgress,
   };

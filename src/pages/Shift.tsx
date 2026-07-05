@@ -6,7 +6,8 @@ import { ShiftHistorySection } from '../components/ShiftHistorySection';
 import { ShiftReview } from '../components/ShiftReview';
 import { getEffectiveStats, isDowned } from '../engine/injury';
 import { applyProbabilityModifiers, calculateTeamSuccessProbability } from '../engine/resolution';
-import { scoreShift } from '../engine/shiftScore';
+import { createRng } from '../engine/rng';
+import { pickStatPointRecipient, scoreShift } from '../engine/shiftScore';
 import { getTeamSynergies } from '../engine/synergy';
 import { useAgentProgress } from '../hooks/useAgentProgress';
 import { useShift } from '../hooks/useShift';
@@ -14,17 +15,79 @@ import { useUserProgress } from '../hooks/useUserProgress';
 import type { ActiveMission } from '../types/activeMission';
 import type { Character } from '../types/character';
 import type { ShiftState } from '../types/shift';
+import type { ShiftRewards, ShiftSummary } from '../types/shiftSummary';
 import { loadMissions } from '../utils/dataLoader';
 import { getMissionTimeBreakdown } from '../utils/missionTime';
 
+interface FinalizeDeps {
+  currentShiftNumber: number;
+  agents: Character[];
+  grantAvailablePoints: (agentId: string, amount: number) => void;
+  applyShiftRewards: (rewards: ShiftRewards) => void;
+  recordShiftSummary: (summary: ShiftSummary) => void;
+}
+
+/**
+ * Score a fully-settled shift, credit its rewards, and record the summary.
+ * scoreShift is pure/deterministic; the ONLY randomness is which eligible hero
+ * receives the stat points — seeded off the shift seed + its success count so
+ * the pick is reproducible and decorrelated from the schedule stream.
+ */
+function finalizeShift(state: ShiftState, deps: FinalizeDeps): void {
+  const rewards = scoreShift(state.tally);
+
+  let statPointAgentId: string | undefined;
+  if (rewards.statPoints > 0) {
+    // Phenomaman (fixedRank) can't spend points, so exclude fixed-rank heroes.
+    const eligibleIds = deps.agents.filter((a) => !a.fixedRank).map((a) => a.id);
+    const pickRng = createRng((state.config.seed ^ (state.tally.succeeded * 2654435761)) | 0);
+    statPointAgentId = pickStatPointRecipient(eligibleIds, pickRng) ?? undefined;
+    if (statPointAgentId) {
+      deps.grantAvailablePoints(statPointAgentId, rewards.statPoints);
+    }
+  }
+
+  deps.applyShiftRewards(rewards);
+  deps.recordShiftSummary({
+    shiftNumber: deps.currentShiftNumber,
+    completedAt: Date.now(),
+    tally: state.tally,
+    seed: state.config.seed,
+    rewards,
+    statPointAgentId,
+  });
+}
+
+/**
+ * Rewards + recipient name to show on the review, once the shift is fully
+ * settled. scoreShift(tally) matches what was credited (same final tally); the
+ * recipient comes from the just-recorded summary (the last one appended).
+ */
+function reviewInfo(
+  shift: ShiftState,
+  summaries: ShiftSummary[],
+  agents: Character[]
+): { rewards?: ShiftRewards; statPointAgentName?: string } {
+  if (shift.phase !== 'ended' || shift.activeMissions.length > 0) {
+    return {};
+  }
+  const rewards = scoreShift(shift.tally);
+  const last = summaries[summaries.length - 1];
+  const statPointAgentName = last?.statPointAgentId
+    ? agents.find((a) => a.id === last.statPointAgentId)?.name
+    : undefined;
+  return { rewards, statPointAgentName };
+}
+
 export function Shift() {
   const missions = loadMissions();
-  const { agents, awardExperience, applyInjuries } = useAgentProgress();
+  const { agents, awardExperience, applyInjuries, grantAvailablePoints } = useAgentProgress();
   const {
     userProgress,
     addMissionCompletion,
     recordSynergyDispatch,
     recordShiftSummary,
+    applyShiftRewards,
     consumePity,
   } = useUserProgress();
 
@@ -56,15 +119,15 @@ export function Shift() {
     }
   };
 
-  // When the shift fully settles, score it and record the summary. Rewards are
-  // computed here (scoreShift is pure); crediting them to progress is Track 2.
+  // When the shift fully settles, score it, credit its rewards, and record the
+  // summary (see finalizeShift above).
   const handleShiftFinalized = (state: ShiftState) => {
-    recordShiftSummary({
-      shiftNumber: currentShiftNumber,
-      completedAt: Date.now(),
-      tally: state.tally,
-      seed: state.config.seed,
-      rewards: scoreShift(state.tally),
+    finalizeShift(state, {
+      currentShiftNumber,
+      agents,
+      grantAvailablePoints,
+      applyShiftRewards,
+      recordShiftSummary,
     });
   };
 
@@ -186,6 +249,11 @@ export function Shift() {
   const elapsedMs = Math.max(0, now - shift.shiftStartMs);
   const spawnRemainingMs = Math.max(0, shift.config.shiftDurationMs - elapsedMs);
   const ended = shift.phase === 'ended';
+  const { rewards: shiftRewards, statPointAgentName } = reviewInfo(
+    shift,
+    userProgress.shiftSummaries,
+    agents
+  );
 
   return (
     <div className="shift-page">
@@ -205,6 +273,8 @@ export function Shift() {
         <ShiftReview
           tally={shift.tally}
           pendingMissions={shift.activeMissions.length}
+          rewards={shiftRewards}
+          statPointAgentName={statPointAgentName}
           onNewShift={handleNewShift}
         />
       )}

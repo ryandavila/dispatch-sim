@@ -398,4 +398,42 @@ describe('useAgentProgress', () => {
     expect(result.current.agents[0].stats.Combat).toBe(4); // 2 + 2, preserved
     expect(result.current.agents[0].experience).toBe(100);
   });
+
+  describe('grantAvailablePoints', () => {
+    it('adds points to an agent with no prior progress entry', () => {
+      const { result } = renderHook(() => useAgentProgress());
+
+      act(() => {
+        result.current.grantAvailablePoints('agent-1', 3);
+      });
+
+      // Base availablePoints (2) + 3 granted.
+      expect(result.current.agents.find((a) => a.id === 'agent-1')?.availablePoints).toBe(5);
+    });
+
+    it('adds points on top of an existing progress entry', () => {
+      const { result } = renderHook(() => useAgentProgress());
+
+      act(() => {
+        result.current.grantAvailablePoints('agent-1', 1);
+      });
+      act(() => {
+        result.current.grantAvailablePoints('agent-1', 2);
+      });
+
+      expect(result.current.agents.find((a) => a.id === 'agent-1')?.availablePoints).toBe(5);
+    });
+
+    it('is a no-op for non-positive amounts and unknown agents', () => {
+      const { result } = renderHook(() => useAgentProgress());
+
+      act(() => {
+        result.current.grantAvailablePoints('agent-1', 0);
+        result.current.grantAvailablePoints('agent-1', -2);
+        result.current.grantAvailablePoints('nope', 5);
+      });
+
+      expect(result.current.agents.find((a) => a.id === 'agent-1')?.availablePoints).toBe(2);
+    });
+  });
 });

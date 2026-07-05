@@ -96,6 +96,32 @@ describe('useUserProgress', () => {
     expect(shiftSummaries.length + 1).toBe(3);
   });
 
+  it('credits med kits and pity charges from shift rewards', () => {
+    const { result } = renderHook(() => useUserProgress());
+    const startMedKits = result.current.userProgress.medKits; // 3
+    const startPity = result.current.userProgress.pityRemaining; // 3
+
+    act(() => {
+      result.current.applyShiftRewards({ medKits: 2, pityCharges: 1, statPoints: 4 });
+    });
+
+    expect(result.current.userProgress.medKits).toBe(startMedKits + 2);
+    expect(result.current.userProgress.pityRemaining).toBe(startPity + 1);
+  });
+
+  it('applyShiftRewards is a no-op when no med kits or pity are earned', () => {
+    const { result } = renderHook(() => useUserProgress());
+    const before = result.current.userProgress;
+
+    act(() => {
+      result.current.applyShiftRewards({ medKits: 0, pityCharges: 0, statPoints: 3 });
+    });
+
+    // Stat-point-only rewards don't touch account resources.
+    expect(result.current.userProgress.medKits).toBe(before.medKits);
+    expect(result.current.userProgress.pityRemaining).toBe(before.pityRemaining);
+  });
+
   it('should add mission completion and update total XP', () => {
     const { result } = renderHook(() => useUserProgress());
 

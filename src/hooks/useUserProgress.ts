@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { ShiftSummary } from '../types/shiftSummary';
+import type { ShiftRewards, ShiftSummary } from '../types/shiftSummary';
 import type { MissionCompletion, UserProgress } from '../types/userProgress';
 import { INITIAL_USER_PROGRESS } from '../types/userProgress';
 
@@ -80,6 +80,22 @@ export function useUserProgress() {
     }));
   };
 
+  /**
+   * Credit the account-level rewards a completed shift earned: med kits and
+   * pity charges are added to the player's stock. (Stat points go to a hero
+   * via useAgentProgress, so they aren't handled here.)
+   */
+  const applyShiftRewards = (rewards: ShiftRewards) => {
+    if (rewards.medKits <= 0 && rewards.pityCharges <= 0) {
+      return;
+    }
+    setUserProgress((prev) => ({
+      ...prev,
+      medKits: prev.medKits + Math.max(0, rewards.medKits),
+      pityRemaining: prev.pityRemaining + Math.max(0, rewards.pityCharges),
+    }));
+  };
+
   /** Spend one pity charge (when the pity guarantee fires on a deploy). */
   const consumePity = () => {
     setUserProgress((prev) => ({
@@ -102,6 +118,7 @@ export function useUserProgress() {
     consumeMedKit,
     recordSynergyDispatch,
     recordShiftSummary,
+    applyShiftRewards,
     consumePity,
     isMissionCompleted,
     resetProgress,
