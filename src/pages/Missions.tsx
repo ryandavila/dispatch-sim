@@ -135,26 +135,6 @@ export function Missions() {
     ? getMissionTimeBreakdown(selectedMission, selectedAgents)
     : null;
 
-  const getDifficultyColor = (difficulty: Mission['difficulty']) => {
-    switch (difficulty) {
-      case 'Easy':
-        return '#22c55e';
-      case 'Medium':
-        return '#f59e0b';
-      case 'Hard':
-        return '#d97706';
-      case 'Extreme':
-        return '#ef4444';
-    }
-  };
-
-  const getSuccessColor = (probability: number) => {
-    if (probability >= 0.8) return '#22c55e';
-    if (probability >= 0.5) return '#f59e0b';
-    if (probability >= 0.3) return '#d97706';
-    return '#ef4444';
-  };
-
   return (
     <div className="missions-page">
       <div className="missions-page-header">
@@ -240,7 +220,6 @@ export function Missions() {
             missions={filteredMissions}
             selectedMission={selectedMission}
             onMissionSelect={handleMissionSelect}
-            getDifficultyColor={getDifficultyColor}
           />
 
           {/* Mission Details & Team Selection */}
@@ -255,7 +234,6 @@ export function Missions() {
               isAgentAvailable={isAgentAvailable}
               onToggleAgent={toggleAgentSelection}
               onDeployMission={handleDeployMission}
-              getSuccessColor={getSuccessColor}
             />
           )}
         </>

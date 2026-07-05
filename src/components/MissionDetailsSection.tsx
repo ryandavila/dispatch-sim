@@ -3,6 +3,7 @@ import { combineTeamStats } from '../engine/resolution';
 import { getSynergyBonus, synergyPairKey, type TeamSynergy } from '../engine/synergy';
 import type { Character } from '../types/character';
 import type { Mission } from '../types/mission';
+import { getSuccessColor } from '../utils/colors';
 import type { getMissionTimeBreakdown } from '../utils/missionTime';
 import { AgentSelectCard } from './AgentSelectCard';
 import { MissionTimeline } from './MissionTimeline';
@@ -19,7 +20,6 @@ interface MissionDetailsSectionProps {
   isAgentAvailable: (agentId: string) => boolean;
   onToggleAgent: (agent: Character) => void;
   onDeployMission: () => void;
-  getSuccessColor: (probability: number) => string;
 }
 
 export function MissionDetailsSection({
@@ -32,7 +32,6 @@ export function MissionDetailsSection({
   isAgentAvailable,
   onToggleAgent,
   onDeployMission,
-  getSuccessColor,
 }: MissionDetailsSectionProps) {
   const agentName = (agentId: string) =>
     allAgents.find((agent) => agent.id === agentId)?.name ?? agentId;

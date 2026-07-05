@@ -2,7 +2,7 @@
 // the more often they are dispatched together. Pure and React-free — pair
 // definitions live in data/synergies.json, dispatch counts are injected.
 
-import synergiesData from '../../data/synergies.json';
+import { loadSynergies } from '../utils/dataLoader';
 
 export type SynergyPair = [string, string];
 
@@ -14,13 +14,9 @@ export const MAX_SYNERGY_LEVEL = 3;
 /** Success-probability bonus per synergy level (+5% each). */
 export const SYNERGY_BONUS_PER_LEVEL = 0.05;
 
-interface SynergyEntry {
-  agents: string[];
-}
-
-/** All synergy duos defined in data/synergies.json. */
+/** All synergy duos defined in data/synergies.json (validated at load). */
 export function loadSynergyPairs(): SynergyPair[] {
-  return (synergiesData as SynergyEntry[]).map((entry) => [entry.agents[0], entry.agents[1]]);
+  return loadSynergies().map((entry) => [entry.agents[0], entry.agents[1]]);
 }
 
 /** Canonical, order-independent persistence key for a pair of agent ids. */

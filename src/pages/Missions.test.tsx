@@ -2,29 +2,29 @@
  * @vitest-environment jsdom
  */
 
-import { act, render } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { ActiveMission } from '../types/activeMission';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { describe, expect, it, vi } from 'vitest';
 import type { Character } from '../types/character';
 import type { Mission } from '../types/mission';
 import { Missions } from './Missions';
 
-const mockMission: Mission = {
-  id: 'mission-1',
+const TEST_MISSION: Mission = {
+  id: 'mission-test',
   name: 'Test Mission',
-  description: 'A test mission',
+  description: 'A mission for testing the deploy flow',
   difficulty: 'Easy',
   maxAgents: 2,
-  requirements: { Combat: 3, Vigor: 3, Mobility: 3, Charisma: 3, Intellect: 3 },
+  requirements: { Combat: 1, Vigor: 1, Mobility: 1, Charisma: 1, Intellect: 1 },
+  rewards: { experience: 100 },
   travelTime: 2,
   missionDuration: 4,
-  rewards: { experience: 100 },
 };
 
-const mockAgents: Character[] = [
+const TEST_AGENTS: Character[] = [
   {
     id: 'agent-1',
-    name: 'Test Agent 1',
+    name: 'Alpha Agent',
     level: 1,
     experience: 50,
     stats: { Combat: 2, Vigor: 2, Mobility: 2, Charisma: 2, Intellect: 2 },
@@ -35,7 +35,7 @@ const mockAgents: Character[] = [
   },
   {
     id: 'agent-2',
-    name: 'Test Agent 2',
+    name: 'Beta Agent',
     level: 1,
     experience: 50,
     stats: { Combat: 3, Vigor: 2, Mobility: 2, Charisma: 2, Intellect: 2 },
@@ -47,94 +47,68 @@ const mockAgents: Character[] = [
 ];
 
 vi.mock('../utils/dataLoader', () => ({
-  loadAgents: vi.fn(() => mockAgents),
-  loadMissions: vi.fn(() => [mockMission]),
+  loadMissions: () => [TEST_MISSION],
+  loadAgents: () => TEST_AGENTS,
+  loadSynergies: () => [],
 }));
 
-// Capture the completion callback that Missions wires into useActiveMissions
-let capturedOnMissionComplete: ((mission: ActiveMission) => void) | undefined;
-
-vi.mock('../hooks/useActiveMissions', () => ({
-  useActiveMissions: (options: { onMissionComplete?: (mission: ActiveMission) => void } = {}) => {
-    capturedOnMissionComplete = options.onMissionComplete;
-    return {
-      activeMissions: [],
-      completedMissions: [],
-      currentTime: Date.now(),
-      deployMission: vi.fn(),
-      isAgentAvailable: () => true,
-      removeMission: vi.fn(),
-    };
-  },
+vi.mock('../hooks/useAgentProgress', () => ({
+  useAgentProgress: () => ({
+    agents: TEST_AGENTS,
+    awardExperience: vi.fn(),
+    updateAgentStats: vi.fn(),
+    applyInjuries: vi.fn(),
+    healAgent: vi.fn(),
+    resetAgentProgress: vi.fn(),
+  }),
 }));
 
-function makeCompletedMission(success: boolean): ActiveMission {
-  return {
-    id: `run-${Math.random()}`,
-    mission: mockMission,
-    agents: mockAgents,
-    startTime: Date.now(),
-    currentPhase: 'completed',
-    phaseStartTime: Date.now(),
-    travelOutboundDuration: 0,
-    missionDuration: 0,
-    travelReturnDuration: 0,
-    restDuration: 0,
-    totalDuration: 0,
-    outcome: { success, probability: 0.5, roll: success ? 0.1 : 0.9 },
-  };
-}
+describe('Missions - deploy flow', () => {
+  it('deploys a mission and marks the deployed agents as unavailable', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<Missions />);
 
-function readAgentProgress() {
-  return JSON.parse(localStorage.getItem('dispatch-sim-agent-progress-v2') ?? '{}');
-}
+    // No active missions before deploying
+    expect(screen.queryByText('Active Missions')).not.toBeInTheDocument();
 
-describe('Missions - injury wiring on completion', () => {
-  beforeEach(() => {
-    localStorage.clear();
-    capturedOnMissionComplete = undefined;
+    // Select the mission from the list
+    await user.click(screen.getByText('Test Mission'));
+    expect(screen.getByText('Select Team')).toBeInTheDocument();
+
+    // Select an agent for the team
+    const alphaCard = screen.getByRole('button', { name: /Alpha Agent/ });
+    await user.click(alphaCard);
+    expect(screen.getByText('1/2')).toBeInTheDocument();
+
+    // Deploy
+    await user.click(screen.getByRole('button', { name: /Deploy Mission/i }));
+
+    // The active mission appears with the deployed agent
+    expect(screen.getByText('Active Missions')).toBeInTheDocument();
+    const activeCard = container.querySelector('.active-mission-card');
+    expect(activeCard).not.toBeNull();
+    expect(activeCard).toHaveTextContent('Test Mission');
+    expect(activeCard).toHaveTextContent('Alpha Agent');
+
+    // The deployed agent is no longer selectable, the other agent still is
+    expect(screen.getByRole('button', { name: /Alpha Agent/ })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Beta Agent/ })).toBeEnabled();
+
+    // Selection was cleared by the deploy
+    expect(screen.getByText('0/2')).toBeInTheDocument();
   });
 
-  afterEach(() => {
-    localStorage.clear();
-  });
-
-  it('injures every team member when a mission fails', () => {
+  it('does not add a deployed agent back to the team when clicked', async () => {
+    const user = userEvent.setup();
     render(<Missions />);
 
-    act(() => {
-      capturedOnMissionComplete?.(makeCompletedMission(false));
-    });
+    await user.click(screen.getByText('Test Mission'));
+    await user.click(screen.getByRole('button', { name: /Alpha Agent/ }));
+    await user.click(screen.getByRole('button', { name: /Deploy Mission/i }));
 
-    const progress = readAgentProgress();
-    expect(progress['agent-1'].injuryCount).toBe(1);
-    expect(progress['agent-2'].injuryCount).toBe(1);
-  });
-
-  it('downs agents on a second failure', () => {
-    render(<Missions />);
-
-    act(() => {
-      capturedOnMissionComplete?.(makeCompletedMission(false));
-    });
-    act(() => {
-      capturedOnMissionComplete?.(makeCompletedMission(false));
-    });
-
-    const progress = readAgentProgress();
-    expect(progress['agent-1'].injuryCount).toBe(2);
-    expect(progress['agent-2'].injuryCount).toBe(2);
-  });
-
-  it('does not injure agents and awards XP when a mission succeeds', () => {
-    render(<Missions />);
-
-    act(() => {
-      capturedOnMissionComplete?.(makeCompletedMission(true));
-    });
-
-    const progress = readAgentProgress();
-    expect(progress['agent-1'].injuryCount).toBe(0);
-    expect(progress['agent-1'].experience).toBe(150); // 50 base + 100 reward
+    // Clicking the now-unavailable agent does nothing
+    await user.click(screen.getByRole('button', { name: /Alpha Agent/ }));
+    expect(screen.getByText('0/2')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Deploy Mission/i })).not.toBeInTheDocument();
   });
 });

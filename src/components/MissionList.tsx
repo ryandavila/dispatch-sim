@@ -1,18 +1,13 @@
 import type { Mission } from '../types/mission';
+import { getDifficultyColor } from '../utils/colors';
 
 interface MissionListProps {
   missions: Mission[];
   selectedMission: Mission | null;
   onMissionSelect: (mission: Mission) => void;
-  getDifficultyColor: (difficulty: Mission['difficulty']) => string;
 }
 
-export function MissionList({
-  missions,
-  selectedMission,
-  onMissionSelect,
-  getDifficultyColor,
-}: MissionListProps) {
+export function MissionList({ missions, selectedMission, onMissionSelect }: MissionListProps) {
   return (
     <div className="missions-list">
       {missions.map((mission) => (
