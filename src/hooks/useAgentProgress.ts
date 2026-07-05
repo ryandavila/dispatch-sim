@@ -4,7 +4,10 @@ import { applyExperience } from '../types/character';
 import type { StatPool } from '../types/stats';
 import { loadAgents } from '../utils/dataLoader';
 
-const STORAGE_KEY = 'dispatch-sim-agent-progress';
+// v2: progression rework (real-game XP curve, XP cap, fixedRank). Progress saved
+// under the old key used the quadratic curve and is incompatible, so it is wiped.
+const STORAGE_KEY = 'dispatch-sim-agent-progress-v2';
+const LEGACY_STORAGE_KEY = 'dispatch-sim-agent-progress';
 
 interface AgentProgressData {
   [agentId: string]: {
@@ -22,6 +25,8 @@ interface AgentProgressData {
 export function useAgentProgress() {
   const [agentProgress, setAgentProgress] = useState<AgentProgressData>(() => {
     try {
+      // Drop pre-rework saves; the old XP curve is incompatible with the new one
+      localStorage.removeItem(LEGACY_STORAGE_KEY);
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         return JSON.parse(stored);
@@ -76,8 +81,10 @@ export function useAgentProgress() {
           ? { ...baseAgent, ...currentProgress }
           : baseAgent;
 
-        // Apply experience and get updated character
+        // Apply experience and get updated character.
+        // Fixed-rank and XP-capped agents come back unchanged.
         const updatedAgent = applyExperience(currentAgent, xpAmount);
+        if (updatedAgent === currentAgent) continue;
 
         // Store the progress
         updates[agentId] = {

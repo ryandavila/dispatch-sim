@@ -11,7 +11,7 @@ const baseCharacter: Character = {
   id: 'test-agent',
   name: 'Test Agent',
   level: 1,
-  experience: 50,
+  experience: 0,
   stats: { Combat: 2, Vigor: 2, Mobility: 2, Charisma: 2, Intellect: 2 },
   availablePoints: 0,
   canFly: false,
@@ -31,7 +31,7 @@ describe('CharacterCard', () => {
   it('should display XP progress bar', () => {
     render(<CharacterCard character={baseCharacter} />);
 
-    expect(screen.getByText(/0 \/ 150 XP/)).toBeInTheDocument();
+    expect(screen.getByText(/0 \/ 1000 XP/)).toBeInTheDocument();
   });
 
   it('should not show level-up badge when no points available', () => {
@@ -78,14 +78,34 @@ describe('CharacterCard', () => {
   });
 
   it('should calculate XP progress correctly', () => {
-    // Character at 100 XP, needs 200 for level 2
-    // 100 - 50 (level 1 XP) = 50 XP into level
-    // 200 - 50 = 150 XP needed for level
-    // Progress: 50 / 150 XP
-    const characterWithXP = { ...baseCharacter, experience: 100 };
+    // Character at 400 XP, needs 1000 for level 2
+    // Progress: 400 / 1000 XP
+    const characterWithXP = { ...baseCharacter, experience: 400 };
     render(<CharacterCard character={characterWithXP} />);
 
-    expect(screen.getByText(/50 \/ 150 XP/)).toBeInTheDocument();
+    expect(screen.getByText(/400 \/ 1000 XP/)).toBeInTheDocument();
+  });
+
+  it('should use the per-agent XP curve when set', () => {
+    // Cheaper curve: level 2 at 400 XP
+    const cheapCharacter = { ...baseCharacter, experience: 100, xpToLevel2: 400 };
+    render(<CharacterCard character={cheapCharacter} />);
+
+    expect(screen.getByText(/100 \/ 400 XP/)).toBeInTheDocument();
+  });
+
+  it('should show MAX for fixed-rank agents', () => {
+    const fixedCharacter = { ...baseCharacter, fixedRank: true };
+    render(<CharacterCard character={fixedCharacter} />);
+
+    expect(screen.getByText('MAX')).toBeInTheDocument();
+  });
+
+  it('should show MAX for agents at the level cap', () => {
+    const maxedCharacter = { ...baseCharacter, level: 10, experience: 19800 };
+    render(<CharacterCard character={maxedCharacter} />);
+
+    expect(screen.getByText('MAX')).toBeInTheDocument();
   });
 
   it('should handle selected state', () => {

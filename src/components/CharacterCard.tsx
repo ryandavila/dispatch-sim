@@ -1,6 +1,10 @@
 import { motion } from 'framer-motion';
 import type { Character } from '../types/character';
-import { getExperienceForLevel, getExperienceForNextLevel } from '../types/character';
+import {
+  getExperienceForLevel,
+  getExperienceForNextLevel,
+  isExperienceCapped,
+} from '../types/character';
 import { RadarChart } from './RadarChart';
 
 interface CharacterCardProps {
@@ -10,11 +14,12 @@ interface CharacterCardProps {
 }
 
 export function CharacterCard({ character, onClick, isSelected = false }: CharacterCardProps) {
-  const xpForCurrentLevel = getExperienceForLevel(character.level);
-  const xpForNextLevel = getExperienceForNextLevel(character.level);
+  const isCapped = isExperienceCapped(character);
+  const xpForCurrentLevel = getExperienceForLevel(character.level, character.xpToLevel2);
+  const xpForNextLevel = getExperienceForNextLevel(character.level, character.xpToLevel2);
   const xpIntoCurrentLevel = character.experience - xpForCurrentLevel;
   const xpNeededForLevel = xpForNextLevel - xpForCurrentLevel;
-  const xpProgress = (xpIntoCurrentLevel / xpNeededForLevel) * 100;
+  const xpProgress = isCapped ? 100 : (xpIntoCurrentLevel / xpNeededForLevel) * 100;
   const hasLevelUp = character.availablePoints > 0;
 
   return (
@@ -40,7 +45,7 @@ export function CharacterCard({ character, onClick, isSelected = false }: Charac
           <div className="xp-progress-fill" style={{ width: `${Math.min(100, xpProgress)}%` }} />
         </div>
         <div className="xp-progress-text">
-          {xpIntoCurrentLevel} / {xpNeededForLevel} XP
+          {isCapped ? 'MAX' : `${xpIntoCurrentLevel} / ${xpNeededForLevel} XP`}
         </div>
       </div>
 

@@ -16,7 +16,7 @@
     "canFly": true,
     "isFlightLicensed": false,
     "restTime": 5,
-    "experience": 50
+    "experience": 0
   },
   {
     "id": "coupe",
@@ -35,7 +35,7 @@
     "canFly": true,
     "isFlightLicensed": false,
     "restTime": 5,
-    "experience": 50
+    "experience": 0
   },
   {
     "id": "punch-up",
@@ -54,7 +54,7 @@
     "canFly": false,
     "isFlightLicensed": false,
     "restTime": 6,
-    "experience": 50
+    "experience": 0
   },
   {
     "id": "prism",
@@ -73,7 +73,7 @@
     "canFly": false,
     "isFlightLicensed": false,
     "restTime": 5,
-    "experience": 50
+    "experience": 0
   },
   {
     "id": "invisigal",
@@ -92,7 +92,8 @@
     "canFly": false,
     "isFlightLicensed": false,
     "restTime": 5,
-    "experience": 50
+    "experience": 0,
+    "xpToLevel2": 700
   },
   {
     "id": "sonar",
@@ -111,7 +112,7 @@
     "canFly": true,
     "isFlightLicensed": false,
     "restTime": 5,
-    "experience": 50
+    "experience": 0
   },
   {
     "id": "malevola",
@@ -130,7 +131,7 @@
     "canFly": false,
     "isFlightLicensed": false,
     "restTime": 5,
-    "experience": 50
+    "experience": 0
   },
   {
     "id": "golem",
@@ -149,7 +150,7 @@
     "canFly": false,
     "isFlightLicensed": false,
     "restTime": 6,
-    "experience": 50
+    "experience": 0
   },
   {
     "id": "phenomaman",
@@ -168,7 +169,8 @@
     "canFly": true,
     "isFlightLicensed": true,
     "restTime": 2,
-    "experience": 50
+    "experience": 0,
+    "fixedRank": true
   },
   {
     "id": "waterboy",
@@ -187,6 +189,7 @@
     "canFly": false,
     "isFlightLicensed": false,
     "restTime": 5,
-    "experience": 50
+    "experience": 0,
+    "xpToLevel2": 400
   }
 ]

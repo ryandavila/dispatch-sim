@@ -29,22 +29,6 @@ export function CharacterSheet({ character, onUpdateCharacter }: CharacterSheetP
     onUpdateCharacter(updatedCharacter);
   };
 
-  const handleDecreaseStat = (pillar: PillarType) => {
-    // Can't go below 1 (base stat)
-    if (character.stats[pillar] <= 1) return;
-
-    const updatedCharacter = {
-      ...character,
-      stats: {
-        ...character.stats,
-        [pillar]: character.stats[pillar] - 1,
-      },
-      availablePoints: character.availablePoints + 1,
-    };
-
-    onUpdateCharacter(updatedCharacter);
-  };
-
   return (
     <div className="character-sheet">
       <div className="character-header">
@@ -80,15 +64,6 @@ export function CharacterSheet({ character, onUpdateCharacter }: CharacterSheetP
             >
               <span className="stat-name">{pillar}</span>
               <div className="stat-controls">
-                <button
-                  type="button"
-                  onClick={() => handleDecreaseStat(pillar)}
-                  disabled={character.stats[pillar] <= 1}
-                  className="stat-button decrease"
-                  aria-label={`Decrease ${pillar}`}
-                >
-                  −
-                </button>
                 <motion.span
                   className="stat-value"
                   key={character.stats[pillar]}
