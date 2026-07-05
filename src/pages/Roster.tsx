@@ -2,13 +2,16 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CharacterCard } from '../components/CharacterCard';
 import { CharacterSheet } from '../components/CharacterSheet';
+import { getEffectiveStats } from '../engine/injury';
 import { useAgentProgress } from '../hooks/useAgentProgress';
+import { useUserProgress } from '../hooks/useUserProgress';
 import type { Character } from '../types/character';
 
 type SortOption = 'name' | 'level' | 'combat' | 'vigor' | 'mobility' | 'charisma' | 'intellect';
 
 export function Roster() {
-  const { agents, updateAgentStats } = useAgentProgress();
+  const { agents, updateAgentStats, healAgent } = useAgentProgress();
+  const { userProgress, consumeMedKit } = useUserProgress();
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const _navigate = useNavigate();
@@ -36,6 +39,12 @@ export function Roster() {
     setSelectedCharacter(updatedCharacter);
     // Persist to agent progress
     updateAgentStats(updatedCharacter);
+  };
+
+  const handleHealCharacter = (character: Character) => {
+    // Healing clears all injuries and consumes one med kit
+    if (!consumeMedKit()) return;
+    healAgent(character.id);
   };
 
   const handleBack = () => {
@@ -74,22 +83,24 @@ export function Roster() {
         return bHasPoints ? 1 : -1; // Agents with points come first
       }
 
-      // Then apply the selected sort
+      // Then apply the selected sort (stats compared post-injury)
+      const aStats = getEffectiveStats(a);
+      const bStats = getEffectiveStats(b);
       switch (sortBy) {
         case 'name':
           return a.name.localeCompare(b.name);
         case 'level':
           return b.level - a.level; // Descending
         case 'combat':
-          return b.stats.Combat - a.stats.Combat;
+          return bStats.Combat - aStats.Combat;
         case 'vigor':
-          return b.stats.Vigor - a.stats.Vigor;
+          return bStats.Vigor - aStats.Vigor;
         case 'mobility':
-          return b.stats.Mobility - a.stats.Mobility;
+          return bStats.Mobility - aStats.Mobility;
         case 'charisma':
-          return b.stats.Charisma - a.stats.Charisma;
+          return bStats.Charisma - aStats.Charisma;
         case 'intellect':
-          return b.stats.Intellect - a.stats.Intellect;
+          return bStats.Intellect - aStats.Intellect;
         default:
           return 0;
       }
@@ -109,10 +120,20 @@ export function Roster() {
       )}
       <main className={`app-main ${selectedCharacter ? 'constrained' : ''}`}>
         {selectedCharacter ? (
-          <CharacterSheet character={selectedCharacter} onUpdateCharacter={handleUpdateCharacter} />
+          <CharacterSheet
+            character={selectedCharacter}
+            medKits={userProgress.medKits}
+            onUpdateCharacter={handleUpdateCharacter}
+            onHealCharacter={handleHealCharacter}
+          />
         ) : (
           <div className="character-roster">
-            <h2>Agent Roster</h2>
+            <div className="roster-header">
+              <h2>Agent Roster</h2>
+              <span className="med-kit-stock" title="Med kits heal all injuries on one agent">
+                🩹 Med Kits: <strong>{userProgress.medKits}</strong>
+              </span>
+            </div>
 
             {/* Filters */}
             <div className="roster-filters">

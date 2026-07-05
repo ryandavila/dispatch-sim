@@ -42,7 +42,8 @@ describe('useUserProgress', () => {
 
     const { result } = renderHook(() => useUserProgress());
 
-    expect(result.current.userProgress).toEqual(savedProgress);
+    // Older saves are merged over defaults, picking up new fields like medKits
+    expect(result.current.userProgress).toEqual({ ...savedProgress, medKits: 3 });
   });
 
   it('should add mission completion and update total XP', () => {
@@ -171,6 +172,62 @@ describe('useUserProgress', () => {
     expect(result.current.userProgress.totalExperience).toBe(0);
     expect(result.current.userProgress.completedMissionIds).toEqual([]);
     expect(result.current.userProgress.missionCompletions).toEqual([]);
+  });
+
+  it('should start with 3 med kits', () => {
+    const { result } = renderHook(() => useUserProgress());
+
+    expect(result.current.userProgress.medKits).toBe(3);
+  });
+
+  it('should consume med kits one at a time', () => {
+    const { result } = renderHook(() => useUserProgress());
+
+    let consumed = false;
+    act(() => {
+      consumed = result.current.consumeMedKit();
+    });
+
+    expect(consumed).toBe(true);
+    expect(result.current.userProgress.medKits).toBe(2);
+  });
+
+  it('should refuse to consume a med kit when out of stock', () => {
+    const { result } = renderHook(() => useUserProgress());
+
+    act(() => {
+      result.current.consumeMedKit();
+      result.current.consumeMedKit();
+      result.current.consumeMedKit();
+    });
+    expect(result.current.userProgress.medKits).toBe(0);
+
+    let consumed = true;
+    act(() => {
+      consumed = result.current.consumeMedKit();
+    });
+
+    expect(consumed).toBe(false);
+    expect(result.current.userProgress.medKits).toBe(0);
+  });
+
+  it('should preserve med kits when recording mission completions', () => {
+    const { result } = renderHook(() => useUserProgress());
+
+    act(() => {
+      result.current.consumeMedKit();
+    });
+    act(() => {
+      result.current.addMissionCompletion({
+        missionId: 'mission-1',
+        completedAt: Date.now(),
+        agents: ['agent-1'],
+        experienceGained: 100,
+        success: true,
+      });
+    });
+
+    expect(result.current.userProgress.medKits).toBe(2);
   });
 
   it('should handle corrupted localStorage data gracefully', () => {

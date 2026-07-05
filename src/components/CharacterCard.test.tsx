@@ -108,6 +108,27 @@ describe('CharacterCard', () => {
     expect(screen.getByText('MAX')).toBeInTheDocument();
   });
 
+  it('should show no injury badges when healthy', () => {
+    render(<CharacterCard character={baseCharacter} />);
+
+    expect(screen.queryByText(/Injured/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Downed/)).not.toBeInTheDocument();
+  });
+
+  it('should show an injured badge after one injury', () => {
+    render(<CharacterCard character={{ ...baseCharacter, injuryCount: 1 }} />);
+
+    expect(screen.getByText(/Injured/)).toBeInTheDocument();
+    expect(screen.queryByText(/Downed/)).not.toBeInTheDocument();
+  });
+
+  it('should show a downed badge after two injuries', () => {
+    render(<CharacterCard character={{ ...baseCharacter, injuryCount: 2 }} />);
+
+    expect(screen.getByText(/Downed/)).toBeInTheDocument();
+    expect(screen.queryByText(/Injured/)).not.toBeInTheDocument();
+  });
+
   it('should handle selected state', () => {
     const { container } = render(<CharacterCard character={baseCharacter} isSelected />);
 

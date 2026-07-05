@@ -267,6 +267,111 @@ describe('useAgentProgress', () => {
     expect(stored === null || stored === '{}').toBe(true);
   });
 
+  it('should injure agents on a failed mission', () => {
+    const { result } = renderHook(() => useAgentProgress());
+
+    act(() => {
+      result.current.applyInjuries(['agent-1', 'agent-2']);
+    });
+
+    expect(result.current.agents[0].injuryCount).toBe(1);
+    expect(result.current.agents[1].injuryCount).toBe(1);
+    // Allocated stats are untouched — the penalty is a modifier
+    expect(result.current.agents[0].stats).toEqual({
+      Combat: 2,
+      Vigor: 2,
+      Mobility: 2,
+      Charisma: 2,
+      Intellect: 2,
+    });
+  });
+
+  it('should down an agent on a second injury and cap the count', () => {
+    const { result } = renderHook(() => useAgentProgress());
+
+    act(() => {
+      result.current.applyInjuries(['agent-1']);
+    });
+    act(() => {
+      result.current.applyInjuries(['agent-1']);
+    });
+
+    expect(result.current.agents[0].injuryCount).toBe(2);
+
+    // A third failure doesn't push past downed
+    act(() => {
+      result.current.applyInjuries(['agent-1']);
+    });
+    expect(result.current.agents[0].injuryCount).toBe(2);
+  });
+
+  it('should heal all injuries on an agent', () => {
+    const { result } = renderHook(() => useAgentProgress());
+
+    act(() => {
+      result.current.applyInjuries(['agent-1']);
+    });
+    act(() => {
+      result.current.applyInjuries(['agent-1']);
+    });
+    expect(result.current.agents[0].injuryCount).toBe(2);
+
+    act(() => {
+      result.current.healAgent('agent-1');
+    });
+
+    expect(result.current.agents[0].injuryCount).toBe(0);
+  });
+
+  it('should persist injuries to localStorage', () => {
+    const { result } = renderHook(() => useAgentProgress());
+
+    act(() => {
+      result.current.applyInjuries(['agent-1']);
+    });
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY)!);
+    expect(stored['agent-1'].injuryCount).toBe(1);
+    // Level and stats carried over from the base agent
+    expect(stored['agent-1'].level).toBe(1);
+    expect(stored['agent-1'].stats.Combat).toBe(2);
+  });
+
+  it('should preserve injuries when awarding XP and updating stats', () => {
+    const { result } = renderHook(() => useAgentProgress());
+
+    act(() => {
+      result.current.applyInjuries(['agent-1']);
+    });
+    act(() => {
+      result.current.awardExperience(['agent-1'], 100);
+    });
+
+    expect(result.current.agents[0].injuryCount).toBe(1);
+    expect(result.current.agents[0].experience).toBe(100);
+
+    act(() => {
+      result.current.updateAgentStats(result.current.agents[0]);
+    });
+    expect(result.current.agents[0].injuryCount).toBe(1);
+  });
+
+  it('should treat old saves without injuryCount as healthy', () => {
+    const savedProgress = {
+      'agent-1': {
+        level: 2,
+        experience: 200,
+        availablePoints: 3,
+        stats: { Combat: 3, Vigor: 2, Mobility: 2, Charisma: 2, Intellect: 2 },
+      },
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(savedProgress));
+
+    const { result } = renderHook(() => useAgentProgress());
+
+    expect(result.current.agents[0].injuryCount).toBe(0);
+  });
+
   it('should preserve stat changes when awarding XP', () => {
     const { result } = renderHook(() => useAgentProgress());
     const agent = result.current.agents[0];

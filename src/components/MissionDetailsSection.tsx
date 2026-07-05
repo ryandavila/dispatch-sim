@@ -1,3 +1,4 @@
+import { getEffectiveStats, isDowned } from '../engine/injury';
 import { combineTeamStats } from '../engine/resolution';
 import type { Character } from '../types/character';
 import type { Mission } from '../types/mission';
@@ -43,7 +44,7 @@ export function MissionDetailsSection({
                 fillOpacity: 0.2,
               },
               {
-                stats: combineTeamStats(selectedAgents.map((a) => a.stats)),
+                stats: combineTeamStats(selectedAgents.map((a) => getEffectiveStats(a))),
                 color: 'rgba(20, 184, 166, 0.5)',
                 label: 'Team',
                 fillOpacity: 0.3,
@@ -120,8 +121,12 @@ export function MissionDetailsSection({
           const isExcluded = mission.excludedAgents?.includes(agent.id) ?? false;
           const isAtLimit = selectedAgents.length >= mission.maxAgents;
           const isOnMission = !isAgentAvailable(agent.id);
+          const isAgentDowned = isDowned(agent);
           const isDisabled =
-            isExcluded || (!isSelected && isAtLimit) || (isOnMission && !isSelected);
+            isExcluded ||
+            isAgentDowned ||
+            (!isSelected && isAtLimit) ||
+            (isOnMission && !isSelected);
           return (
             <AgentSelectCard
               key={agent.id}

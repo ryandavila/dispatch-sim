@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { getEffectiveStats, isDowned, isInjured } from '../engine/injury';
 import type { Character } from '../types/character';
 import {
   getExperienceForLevel,
@@ -21,10 +22,13 @@ export function CharacterCard({ character, onClick, isSelected = false }: Charac
   const xpNeededForLevel = xpForNextLevel - xpForCurrentLevel;
   const xpProgress = isCapped ? 100 : (xpIntoCurrentLevel / xpNeededForLevel) * 100;
   const hasLevelUp = character.availablePoints > 0;
+  const downed = isDowned(character);
+  const injured = isInjured(character) && !downed;
+  const effectiveStats = getEffectiveStats(character);
 
   return (
     <motion.div
-      className={`character-card ${isSelected ? 'selected' : ''} ${hasLevelUp ? 'has-level-up' : ''}`}
+      className={`character-card ${isSelected ? 'selected' : ''} ${hasLevelUp ? 'has-level-up' : ''} ${downed ? 'downed' : injured ? 'injured' : ''}`}
       onClick={onClick}
       whileHover={{ scale: 1.02, y: -4 }}
       whileTap={{ scale: 0.98 }}
@@ -36,6 +40,16 @@ export function CharacterCard({ character, onClick, isSelected = false }: Charac
         <div className="character-header-right">
           <span className="character-level">Level {character.level}</span>
           {hasLevelUp && <span className="level-up-badge">⬆ Level Up!</span>}
+          {injured && (
+            <span className="injured-badge" title="Injured: -1 to all stats">
+              🩹 Injured
+            </span>
+          )}
+          {downed && (
+            <span className="downed-badge" title="Downed: cannot deploy until healed">
+              ⛔ Downed
+            </span>
+          )}
         </div>
       </div>
 
@@ -60,7 +74,7 @@ export function CharacterCard({ character, onClick, isSelected = false }: Charac
       )}
 
       <div className="character-card-chart">
-        <RadarChart stats={character.stats} maxValue={10} size={380} />
+        <RadarChart stats={effectiveStats} maxValue={10} size={380} />
       </div>
 
       {character.notes && (

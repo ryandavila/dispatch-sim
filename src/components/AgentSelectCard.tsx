@@ -1,3 +1,4 @@
+import { isDowned, isInjured } from '../engine/injury';
 import type { Character } from '../types/character';
 
 interface AgentSelectCardProps {
@@ -15,14 +16,17 @@ export function AgentSelectCard({
   isDisabled,
   onToggle,
 }: AgentSelectCardProps) {
+  const downed = isDowned(agent);
+  const injured = isInjured(agent) && !downed;
+
   const handleClick = () => {
-    if (!isExcluded) {
+    if (!isExcluded && !downed) {
       onToggle(agent);
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (!isExcluded && (e.key === 'Enter' || e.key === ' ')) {
+    if (!isExcluded && !downed && (e.key === 'Enter' || e.key === ' ')) {
       e.preventDefault();
       onToggle(agent);
     }
@@ -33,9 +37,17 @@ export function AgentSelectCard({
     isSelected && 'selected',
     isDisabled && 'disabled',
     isExcluded && 'excluded',
+    injured && 'injured',
+    downed && 'downed',
   ]
     .filter(Boolean)
     .join(' ');
+
+  const title = downed
+    ? 'This agent is downed and needs a med kit before deploying'
+    : isExcluded
+      ? 'This agent cannot or refuses to do this mission'
+      : '';
 
   return (
     <button
@@ -43,9 +55,9 @@ export function AgentSelectCard({
       className={className}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
-      tabIndex={isExcluded ? -1 : 0}
+      tabIndex={isExcluded || downed ? -1 : 0}
       disabled={isDisabled}
-      title={isExcluded ? 'This agent cannot or refuses to do this mission' : ''}
+      title={title}
     >
       <div className="agent-select-info">
         <span className="agent-name">
@@ -57,6 +69,16 @@ export function AgentSelectCard({
           )}
         </span>
         <span className="agent-level">Lvl {agent.level}</span>
+        {injured && (
+          <span className="injured-badge" title="Injured: -1 to all stats">
+            Injured
+          </span>
+        )}
+        {downed && (
+          <span className="downed-badge" title="Downed: cannot deploy until healed">
+            Downed
+          </span>
+        )}
       </div>
       {isSelected && <span className="checkmark">✓</span>}
       {isExcluded && <span className="excluded-badge">✗</span>}

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { getEffectiveStats } from '../engine/injury';
 import { calculateTeamSuccessProbability, resolveMissionOutcome } from '../engine/resolution';
 import type { Rng } from '../engine/rng';
 import type { ActiveMission } from '../types/activeMission';
@@ -81,8 +82,9 @@ export function useActiveMissions(options: UseActiveMissionsOptions = {}) {
   const deployMission = (mission: Mission, agents: Character[]) => {
     const timeBreakdown = getMissionTimeBreakdown(mission, agents);
 
+    // Injuries reduce effective stats, so they also reduce the roll's odds
     const probability = calculateTeamSuccessProbability(
-      agents.map((agent) => agent.stats),
+      agents.map((agent) => getEffectiveStats(agent)),
       mission.requirements
     );
     const outcome = resolveMissionOutcome(probability, rng);

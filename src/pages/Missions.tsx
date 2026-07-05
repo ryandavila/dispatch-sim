@@ -4,6 +4,7 @@ import { CompletedMissionsSection } from '../components/CompletedMissionsSection
 import { MissionDetailsSection } from '../components/MissionDetailsSection';
 import { MissionHistorySection } from '../components/MissionHistorySection';
 import { MissionList } from '../components/MissionList';
+import { getEffectiveStats, isDowned } from '../engine/injury';
 import { calculateTeamSuccessProbability } from '../engine/resolution';
 import { useActiveMissions } from '../hooks/useActiveMissions';
 import { useAgentProgress } from '../hooks/useAgentProgress';
@@ -19,7 +20,7 @@ type MissionTab = 'available' | 'history';
 
 export function Missions() {
   const missions = loadMissions();
-  const { agents, awardExperience } = useAgentProgress();
+  const { agents, awardExperience, applyInjuries } = useAgentProgress();
   const [selectedMission, setSelectedMission] = useState<Mission | null>(null);
   const [selectedAgents, setSelectedAgents] = useState<Character[]>([]);
   const [difficultyFilter, setDifficultyFilter] = useState<DifficultyFilter>('All');
@@ -39,13 +40,16 @@ export function Missions() {
         success,
       });
 
-      // Agents only earn XP on success
+      const agentIds = activeMission.agents.map((a) => a.id);
       if (success) {
-        const agentIds = activeMission.agents.map((a) => a.id);
+        // Agents only earn XP on success
         awardExperience(agentIds, experienceGained);
+      } else {
+        // Failure injures the whole team; a second injury downs an agent
+        applyInjuries(agentIds);
       }
     },
-    [addMissionCompletion, awardExperience]
+    [addMissionCompletion, awardExperience, applyInjuries]
   );
 
   const { activeMissions, completedMissions, currentTime, deployMission, isAgentAvailable } =
@@ -58,6 +62,7 @@ export function Missions() {
 
   const toggleAgentSelection = (agent: Character) => {
     if (!selectedMission) return;
+    if (isDowned(agent)) return; // Downed agents can't be deployed until healed
 
     setSelectedAgents((prev) => {
       const isSelected = prev.some((a) => a.id === agent.id);
@@ -92,7 +97,7 @@ export function Missions() {
 
   const successProbability = selectedMission
     ? calculateTeamSuccessProbability(
-        selectedAgents.map((a) => a.stats),
+        selectedAgents.map((a) => getEffectiveStats(a)),
         selectedMission.requirements
       )
     : 0;

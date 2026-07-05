@@ -8,6 +8,8 @@ export interface Character {
   experience: number; // Current XP
   stats: StatPool;
   availablePoints: number;
+  /** 0 = healthy, 1 = injured (−1 all stats), 2 = downed. Absent = healthy. */
+  injuryCount?: number;
   notes?: string;
   tags?: string[];
   canFly: boolean;
