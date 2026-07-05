@@ -44,27 +44,6 @@ export function fullyEncompasses(characterStats: StatPool, missionRequirements: 
   return PILLARS.every((pillar) => characterStats[pillar] >= missionRequirements[pillar]);
 }
 
-// Combine multiple characters' stats (take max of each pillar)
-export function combineStats(...statPools: StatPool[]): StatPool {
-  if (statPools.length === 0) {
-    return {
-      Combat: 0,
-      Vigor: 0,
-      Mobility: 0,
-      Charisma: 0,
-      Intellect: 0,
-    };
-  }
-
-  return {
-    Combat: Math.max(...statPools.map((s) => s.Combat)),
-    Vigor: Math.max(...statPools.map((s) => s.Vigor)),
-    Mobility: Math.max(...statPools.map((s) => s.Mobility)),
-    Charisma: Math.max(...statPools.map((s) => s.Charisma)),
-    Intellect: Math.max(...statPools.map((s) => s.Intellect)),
-  };
-}
-
 // Calculate the minimum value for each pillar between two stat pools
 // (used for calculating intersection)
 function getIntersectionStats(stats1: StatPool, stats2: StatPool): StatPool {
@@ -104,23 +83,4 @@ export function calculateSuccessProbability(
 
   // Success probability = intersection area / mission area
   return Math.min(intersectionArea / missionArea, 1.0);
-}
-
-// Calculate team success probability for a mission
-// Combines all team members' stats (taking max of each pillar) and calculates success rate
-export function calculateTeamSuccessProbability(
-  teamStats: StatPool[],
-  missionRequirements: StatPool,
-  maxValue: number = 10
-): number {
-  // If no team members, 0% success
-  if (teamStats.length === 0) {
-    return 0;
-  }
-
-  // Combine team stats (take maximum of each pillar)
-  const combinedStats = combineStats(...teamStats);
-
-  // Calculate success probability with combined stats
-  return calculateSuccessProbability(combinedStats, missionRequirements, maxValue);
 }

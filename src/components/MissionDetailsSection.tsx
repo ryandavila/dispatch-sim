@@ -1,6 +1,6 @@
+import { combineTeamStats } from '../engine/resolution';
 import type { Character } from '../types/character';
 import type { Mission } from '../types/mission';
-import { combineStats } from '../utils/geometry';
 import type { getMissionTimeBreakdown } from '../utils/missionTime';
 import { AgentSelectCard } from './AgentSelectCard';
 import { MissionTimeline } from './MissionTimeline';
@@ -43,7 +43,7 @@ export function MissionDetailsSection({
                 fillOpacity: 0.2,
               },
               {
-                stats: combineStats(...selectedAgents.map((a) => a.stats)),
+                stats: combineTeamStats(selectedAgents.map((a) => a.stats)),
                 color: 'rgba(20, 184, 166, 0.5)',
                 label: 'Team',
                 fillOpacity: 0.3,

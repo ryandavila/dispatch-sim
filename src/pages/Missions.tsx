@@ -4,13 +4,13 @@ import { CompletedMissionsSection } from '../components/CompletedMissionsSection
 import { MissionDetailsSection } from '../components/MissionDetailsSection';
 import { MissionHistorySection } from '../components/MissionHistorySection';
 import { MissionList } from '../components/MissionList';
+import { calculateTeamSuccessProbability } from '../engine/resolution';
 import { useActiveMissions } from '../hooks/useActiveMissions';
 import { useAgentProgress } from '../hooks/useAgentProgress';
 import { useUserProgress } from '../hooks/useUserProgress';
 import type { Character } from '../types/character';
 import type { Mission } from '../types/mission';
 import { loadMissions } from '../utils/dataLoader';
-import { calculateTeamSuccessProbability } from '../utils/geometry';
 import { getMissionTimeBreakdown } from '../utils/missionTime';
 
 type DifficultyFilter = Mission['difficulty'] | 'All';
@@ -30,7 +30,6 @@ export function Missions() {
     (activeMission: import('../types/activeMission').ActiveMission) => {
       const experienceGained = activeMission.mission.rewards?.experience || 0;
 
-      // Award XP to user progress
       addMissionCompletion({
         missionId: activeMission.mission.id,
         completedAt: Date.now(),
@@ -38,7 +37,6 @@ export function Missions() {
         experienceGained,
       });
 
-      // Award XP to agents
       const agentIds = activeMission.agents.map((a) => a.id);
       awardExperience(agentIds, experienceGained);
     },
