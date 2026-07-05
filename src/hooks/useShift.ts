@@ -47,6 +47,12 @@ export interface UseShiftOptions {
   onDeployRolled?: (info: DeployRollInfo) => void;
   /** ActiveMission id factory; injectable for deterministic tests. */
   createId?: () => string;
+  /**
+   * localStorage key for freeze-&-resume persistence (Decision #5). When set,
+   * an in-progress shift survives a refresh, resuming as if no time passed.
+   * Omit to keep the shift ephemeral (the default; tests rely on this).
+   */
+  storageKey?: string;
 }
 
 function idleState(config: ShiftConfig): ShiftState {
@@ -61,6 +67,43 @@ function idleState(config: ShiftConfig): ShiftState {
   };
 }
 
+interface ShiftInit {
+  state: ShiftState;
+  pausedAccum: number;
+  pauseStart: number | null;
+}
+
+function loadPersistedShift(storageKey: string | undefined): ShiftState | null {
+  if (!storageKey) {
+    return null;
+  }
+  try {
+    const raw = localStorage.getItem(storageKey);
+    return raw ? (JSON.parse(raw) as ShiftState) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Compute the hook's initial state + clock offset. If a persisted shift exists,
+ * resume it: the virtual clock continues from the saved `lastTickMs`, so any
+ * wall time spent away is absorbed as paused time rather than fast-forwarding
+ * every timer (Decision #5). A shift saved mid-pause resumes running, since the
+ * open-call panel it was paused for is gone after a reload.
+ */
+function computeShiftInit(options: UseShiftOptions): ShiftInit {
+  const config = options.config ?? DEFAULT_SHIFT_CONFIG;
+  const restored = loadPersistedShift(options.storageKey);
+  if (restored && restored.phase !== 'idle') {
+    const now = (options.clock ?? Date.now)();
+    const state =
+      restored.phase === 'paused' ? { ...restored, phase: 'running' as const } : restored;
+    return { state, pausedAccum: now - restored.lastTickMs, pauseStart: null };
+  }
+  return { state: idleState(config), pausedAccum: 0, pauseStart: null };
+}
+
 /**
  * The single real-clock owner for Phase 2. It holds `ShiftState`, pumps
  * `advanceShift` on a wall-clock interval, and maps the reducer's events onto
@@ -72,18 +115,38 @@ function idleState(config: ShiftConfig): ShiftState {
  * timers and in-flight missions and resumes "as if no time passed."
  */
 export function useShift(options: UseShiftOptions) {
-  const [shift, setShift] = useState<ShiftState>(() =>
-    idleState(options.config ?? DEFAULT_SHIFT_CONFIG)
-  );
+  // Compute the initial state (and any resumed clock offset) exactly once.
+  const initRef = useRef<ShiftInit | null>(null);
+  if (initRef.current === null) {
+    initRef.current = computeShiftInit(options);
+  }
 
+  const [shift, setShift] = useState<ShiftState>(initRef.current.state);
   const stateRef = useRef(shift);
   const optsRef = useRef(options);
-  const pausedAccumRef = useRef(0);
-  const pauseStartWallRef = useRef<number | null>(null);
+  const pausedAccumRef = useRef(initRef.current.pausedAccum);
+  const pauseStartWallRef = useRef<number | null>(initRef.current.pauseStart);
 
   useEffect(() => {
     optsRef.current = options;
   });
+
+  // Persist an in-progress shift; clear it once idle (Decision #5).
+  useEffect(() => {
+    const key = options.storageKey;
+    if (!key) {
+      return;
+    }
+    try {
+      if (shift.phase === 'idle') {
+        localStorage.removeItem(key);
+      } else {
+        localStorage.setItem(key, JSON.stringify(shift));
+      }
+    } catch {
+      // ignore serialize / quota errors — persistence is best-effort
+    }
+  }, [shift, options.storageKey]);
 
   const applyState = useCallback((next: ShiftState) => {
     stateRef.current = next;

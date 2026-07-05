@@ -62,6 +62,7 @@ function setup(overrides: Partial<UseShiftOptions> = {}) {
 
 beforeEach(() => {
   vi.useFakeTimers();
+  localStorage.clear();
 });
 
 afterEach(() => {
@@ -199,5 +200,87 @@ describe('useShift', () => {
     expect(result.current.shift.phase).toBe('ended');
     expect(onShiftEnded).toHaveBeenCalledTimes(1);
     expect(onShiftEnded).toHaveBeenCalledWith(expect.objectContaining({ succeeded: 0, failed: 0 }));
+  });
+});
+
+describe('useShift — persistence (freeze & resume)', () => {
+  const STORAGE_KEY = 'test-shift-state';
+
+  function mount(clockValue: () => number, storageKey = STORAGE_KEY) {
+    const options: UseShiftOptions = {
+      missions: [MISSION],
+      config: CONFIG,
+      clock: clockValue,
+      rng: createRng(1),
+      tickMs: 100,
+      createId: () => 'am-1',
+      storageKey,
+    };
+    return renderHook(() => useShift(options));
+  }
+
+  it('resumes a persisted shift without fast-forwarding timers after a long absence', () => {
+    const wall = { value: 0 };
+    const a = mount(() => wall.value);
+    act(() => a.result.current.start());
+
+    const call = a.result.current.shift.calls[0];
+    act(() => {
+      wall.value = call.spawnAt;
+      vi.advanceTimersByTime(100);
+    });
+    expect(a.result.current.shift.calls[0].status).toBe('open');
+    expect(localStorage.getItem(STORAGE_KEY)).not.toBeNull();
+    a.unmount();
+
+    // Tab closed for a very long time, then reopened.
+    wall.value = call.spawnAt + 10_000_000;
+    const b = mount(() => wall.value);
+    expect(b.result.current.shift.phase).toBe('running');
+
+    // Freeze held: the call did NOT expire despite the huge wall gap. A tick
+    // with no further wall movement is a no-op (virtual clock resumed at save).
+    act(() => vi.advanceTimersByTime(100));
+    expect(b.result.current.shift.calls[0].status).toBe('open');
+
+    // It expires only after another full callTimerMs of *running* time.
+    act(() => {
+      wall.value = call.spawnAt + 10_000_000 + CONFIG.callTimerMs;
+      vi.advanceTimersByTime(100);
+    });
+    expect(b.result.current.shift.calls[0].status).toBe('missed');
+  });
+
+  it('coerces a mid-pause save back to running on reload', () => {
+    const wall = { value: 0 };
+    const a = mount(() => wall.value);
+    act(() => a.result.current.start());
+    const call = a.result.current.shift.calls[0];
+    act(() => {
+      wall.value = call.spawnAt;
+      vi.advanceTimersByTime(100);
+    });
+    act(() => a.result.current.pause());
+    expect(a.result.current.shift.phase).toBe('paused');
+    a.unmount();
+
+    const b = mount(() => wall.value);
+    expect(b.result.current.shift.phase).toBe('running');
+  });
+
+  it('clears persisted state when the shift resets to idle', () => {
+    const wall = { value: 0 };
+    const { result } = mount(() => wall.value);
+    act(() => result.current.start());
+    expect(localStorage.getItem(STORAGE_KEY)).not.toBeNull();
+
+    act(() => result.current.reset());
+    expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
+  });
+
+  it('starts fresh (idle) when no persisted shift exists', () => {
+    const wall = { value: 0 };
+    const { result } = mount(() => wall.value, 'unused-key');
+    expect(result.current.shift.phase).toBe('idle');
   });
 });

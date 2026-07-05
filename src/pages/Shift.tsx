@@ -47,6 +47,7 @@ export function Shift() {
 
   const { shift, now, start, deploy, pause, resume } = useShift({
     missions,
+    storageKey: 'dispatch-sim-shift',
     onMissionComplete: handleMissionComplete,
     getSynergyDispatchCount: (pairKey) => userProgress.synergyDispatchCounts[pairKey] ?? 0,
     pityRemaining: userProgress.pityRemaining,
