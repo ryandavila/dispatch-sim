@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { calculateTeamSuccessProbability, resolveMissionOutcome } from '../engine/resolution';
+import type { Rng } from '../engine/rng';
 import type { ActiveMission } from '../types/activeMission';
 import { calculateMissionProgress, createActiveMission } from '../types/activeMission';
 import type { Character } from '../types/character';
@@ -15,10 +17,11 @@ export interface CompletedMission extends ActiveMission {
 
 interface UseActiveMissionsOptions {
   onMissionComplete?: (mission: ActiveMission) => void;
+  rng?: Rng; // Injectable for deterministic tests
 }
 
 export function useActiveMissions(options: UseActiveMissionsOptions = {}) {
-  const { onMissionComplete } = options;
+  const { onMissionComplete, rng = Math.random } = options;
   const [activeMissions, setActiveMissions] = useState<ActiveMission[]>([]);
   const [completedMissions, setCompletedMissions] = useState<CompletedMission[]>([]);
   const [currentTime, setCurrentTime] = useState(Date.now());
@@ -78,13 +81,20 @@ export function useActiveMissions(options: UseActiveMissionsOptions = {}) {
   const deployMission = (mission: Mission, agents: Character[]) => {
     const timeBreakdown = getMissionTimeBreakdown(mission, agents);
 
+    const probability = calculateTeamSuccessProbability(
+      agents.map((agent) => agent.stats),
+      mission.requirements
+    );
+    const outcome = resolveMissionOutcome(probability, rng);
+
     const newActiveMission = createActiveMission(
       mission,
       agents,
       timeBreakdown.travelTimeOutbound * TIME_SCALE,
       timeBreakdown.missionDuration * TIME_SCALE,
       timeBreakdown.travelTimeReturn * TIME_SCALE,
-      timeBreakdown.restTime * TIME_SCALE
+      timeBreakdown.restTime * TIME_SCALE,
+      outcome
     );
 
     setActiveMissions((prev) => [...prev, newActiveMission]);

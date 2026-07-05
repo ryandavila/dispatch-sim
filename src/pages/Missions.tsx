@@ -28,17 +28,22 @@ export function Missions() {
 
   const handleMissionComplete = useCallback(
     (activeMission: import('../types/activeMission').ActiveMission) => {
-      const experienceGained = activeMission.mission.rewards?.experience || 0;
+      const { success } = activeMission.outcome;
+      const experienceGained = success ? activeMission.mission.rewards?.experience || 0 : 0;
 
       addMissionCompletion({
         missionId: activeMission.mission.id,
         completedAt: Date.now(),
         agents: activeMission.agents.map((a) => a.id),
         experienceGained,
+        success,
       });
 
-      const agentIds = activeMission.agents.map((a) => a.id);
-      awardExperience(agentIds, experienceGained);
+      // Agents only earn XP on success
+      if (success) {
+        const agentIds = activeMission.agents.map((a) => a.id);
+        awardExperience(agentIds, experienceGained);
+      }
     },
     [addMissionCompletion, awardExperience]
   );

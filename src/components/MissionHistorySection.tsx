@@ -44,7 +44,12 @@ export function MissionHistorySection({ userProgress, allMissions }: MissionHist
           <div key={`${completion.missionId}-${index}`} className="mission-card completed">
             <div className="mission-card-header">
               <h3>{mission.name}</h3>
-              <span className="history-xp">+{completion.experienceGained} XP</span>
+              {/* Records saved before failure existed lack the flag; treat them as successes */}
+              {completion.success === false ? (
+                <span className="history-failed">Failed</span>
+              ) : (
+                <span className="history-xp">+{completion.experienceGained} XP</span>
+              )}
             </div>
             <p className="mission-description">{mission.description}</p>
             <div className="mission-info">

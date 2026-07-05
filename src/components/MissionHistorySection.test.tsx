@@ -57,6 +57,7 @@ describe('MissionHistorySection', () => {
           completedAt: Date.now(),
           agents: ['agent-1', 'agent-2'],
           experienceGained: 100,
+          success: true,
         },
       ],
       totalExperience: 100,
@@ -70,6 +71,28 @@ describe('MissionHistorySection', () => {
     expect(screen.getByText('2 agents')).toBeInTheDocument();
   });
 
+  it('should display failed attempts with a Failed badge instead of XP', () => {
+    const userProgress: UserProgress = {
+      completedMissionIds: [],
+      missionCompletions: [
+        {
+          missionId: 'mission-1',
+          completedAt: Date.now(),
+          agents: ['agent-1'],
+          experienceGained: 0,
+          success: false,
+        },
+      ],
+      totalExperience: 0,
+    };
+
+    render(<MissionHistorySection userProgress={userProgress} allMissions={mockMissions} />);
+
+    expect(screen.getByText('Rescue Mission')).toBeInTheDocument();
+    expect(screen.getByText('Failed')).toBeInTheDocument();
+    expect(screen.queryByText(/XP/)).not.toBeInTheDocument();
+  });
+
   it('should display multiple completed missions', () => {
     const userProgress: UserProgress = {
       completedMissionIds: ['mission-1', 'mission-2'],
@@ -79,12 +102,14 @@ describe('MissionHistorySection', () => {
           completedAt: Date.now() - 1000,
           agents: ['agent-1'],
           experienceGained: 100,
+          success: true,
         },
         {
           missionId: 'mission-2',
           completedAt: Date.now(),
           agents: ['agent-2', 'agent-3'],
           experienceGained: 250,
+          success: true,
         },
       ],
       totalExperience: 350,
@@ -107,12 +132,14 @@ describe('MissionHistorySection', () => {
           completedAt: 1000,
           agents: ['agent-1'],
           experienceGained: 100,
+          success: true,
         },
         {
           missionId: 'mission-2',
           completedAt: 2000,
           agents: ['agent-2'],
           experienceGained: 250,
+          success: true,
         },
       ],
       totalExperience: 350,
@@ -137,6 +164,7 @@ describe('MissionHistorySection', () => {
           completedAt,
           agents: ['agent-1'],
           experienceGained: 100,
+          success: true,
         },
       ],
       totalExperience: 100,
@@ -158,6 +186,7 @@ describe('MissionHistorySection', () => {
           completedAt: Date.now(),
           agents: ['agent-1'],
           experienceGained: 100,
+          success: true,
         },
       ],
       totalExperience: 100,
@@ -181,6 +210,7 @@ describe('MissionHistorySection', () => {
           completedAt: Date.now(),
           agents: ['agent-1', 'agent-2', 'agent-3'],
           experienceGained: 100,
+          success: true,
         },
       ],
       totalExperience: 100,

@@ -11,18 +11,20 @@ export function CompletedMissionsSection({ completedMissions }: CompletedMission
 
   return (
     <div className="completed-missions-section">
-      <h3>Mission Complete!</h3>
+      <h3>Mission Results</h3>
       <div className="completed-missions-list">
         {completedMissions.map((mission) => (
           <div key={mission.id} className="completed-mission-card">
             <div className="completed-mission-header">
               <h4>{mission.mission.name}</h4>
-              <span className="completion-badge">Success</span>
+              <span className={`completion-badge ${mission.outcome.success ? '' : 'failed'}`}>
+                {mission.outcome.success ? 'Success' : 'Failed'}
+              </span>
             </div>
             <div className="completed-mission-agents">
               Team: {mission.agents.map((agent) => agent.name).join(', ')}
             </div>
-            {mission.mission.rewards && (
+            {mission.outcome.success && mission.mission.rewards && (
               <div className="mission-rewards">
                 <span className="reward-label">Rewards:</span>
                 <span className="reward-xp">+{mission.mission.rewards.experience} XP</span>

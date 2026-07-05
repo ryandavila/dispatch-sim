@@ -54,6 +54,7 @@ describe('useUserProgress', () => {
         completedAt: Date.now(),
         agents: ['agent-1', 'agent-2'],
         experienceGained: 100,
+        success: true,
       });
     });
 
@@ -71,6 +72,7 @@ describe('useUserProgress', () => {
         completedAt: Date.now(),
         agents: ['agent-1'],
         experienceGained: 100,
+        success: true,
       });
     });
 
@@ -80,11 +82,34 @@ describe('useUserProgress', () => {
         completedAt: Date.now(),
         agents: ['agent-2'],
         experienceGained: 250,
+        success: true,
       });
     });
 
     expect(result.current.userProgress.totalExperience).toBe(350);
     expect(result.current.userProgress.completedMissionIds).toEqual(['mission-1', 'mission-2']);
+  });
+
+  it('should record failed attempts without marking the mission completed', () => {
+    const { result } = renderHook(() => useUserProgress());
+
+    act(() => {
+      result.current.addMissionCompletion({
+        missionId: 'mission-1',
+        completedAt: Date.now(),
+        agents: ['agent-1'],
+        experienceGained: 0,
+        success: false,
+      });
+    });
+
+    // Failed missions stay available for another attempt
+    expect(result.current.userProgress.completedMissionIds).toEqual([]);
+    expect(result.current.isMissionCompleted('mission-1')).toBe(false);
+    // But the attempt is still recorded in history
+    expect(result.current.userProgress.missionCompletions).toHaveLength(1);
+    expect(result.current.userProgress.missionCompletions[0].success).toBe(false);
+    expect(result.current.userProgress.totalExperience).toBe(0);
   });
 
   it('should correctly identify completed missions', () => {
@@ -96,6 +121,7 @@ describe('useUserProgress', () => {
         completedAt: Date.now(),
         agents: ['agent-1'],
         experienceGained: 100,
+        success: true,
       });
     });
 
@@ -112,6 +138,7 @@ describe('useUserProgress', () => {
         completedAt: Date.now(),
         agents: ['agent-1'],
         experienceGained: 100,
+        success: true,
       });
     });
 
@@ -131,6 +158,7 @@ describe('useUserProgress', () => {
         completedAt: Date.now(),
         agents: ['agent-1'],
         experienceGained: 100,
+        success: true,
       });
     });
 

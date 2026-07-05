@@ -25,6 +25,8 @@ const mockAgent: Character = {
   restTime: 3,
 };
 
+const mockOutcome = { success: true, probability: 1, roll: 0.5 };
+
 describe('createActiveMission', () => {
   it('should create an active mission with correct structure', () => {
     const activeMission = createActiveMission(
@@ -33,7 +35,8 @@ describe('createActiveMission', () => {
       2000, // 2s travel outbound
       4000, // 4s mission
       2000, // 2s travel return
-      3000 // 3s rest
+      3000, // 3s rest
+      mockOutcome
     );
 
     expect(activeMission.mission).toBe(mockMission);
@@ -44,6 +47,7 @@ describe('createActiveMission', () => {
     expect(activeMission.restDuration).toBe(3000);
     expect(activeMission.totalDuration).toBe(11000);
     expect(activeMission.currentPhase).toBe('travel-outbound');
+    expect(activeMission.outcome).toBe(mockOutcome);
     expect(activeMission.id).toBeTruthy();
   });
 });
@@ -56,7 +60,8 @@ describe('calculateMissionProgress', () => {
     2000, // 2s travel outbound
     4000, // 4s mission
     2000, // 2s travel return
-    3000 // 3s rest
+    3000, // 3s rest
+    mockOutcome
   );
   activeMission.startTime = startTime;
 

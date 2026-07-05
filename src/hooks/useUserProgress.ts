@@ -30,7 +30,10 @@ export function useUserProgress() {
 
   const addMissionCompletion = (completion: MissionCompletion) => {
     setUserProgress((prev) => ({
-      completedMissionIds: [...prev.completedMissionIds, completion.missionId],
+      // Failed missions stay available for another attempt
+      completedMissionIds: completion.success
+        ? [...prev.completedMissionIds, completion.missionId]
+        : prev.completedMissionIds,
       missionCompletions: [...prev.missionCompletions, completion],
       totalExperience: prev.totalExperience + completion.experienceGained,
     }));

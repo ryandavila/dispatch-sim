@@ -190,6 +190,56 @@ describe('useActiveMissions', () => {
     expect(result.current.isAgentAvailable('agent-2')).toBe(false);
   });
 
+  it('should roll a guaranteed success when the team fully covers requirements', () => {
+    const { result } = renderHook(() => useActiveMissions());
+
+    act(() => {
+      // mockAgent has 6 in every stat vs requirements of 5 — probability 1.0
+      result.current.deployMission(mockMission, [mockAgent]);
+    });
+
+    expect(result.current.activeMissions[0].outcome.success).toBe(true);
+    expect(result.current.activeMissions[0].outcome.probability).toBe(1.0);
+  });
+
+  it('should roll a failure when the rng lands above the success probability', () => {
+    const weakAgent: Character = {
+      ...mockAgent,
+      stats: { Combat: 1, Vigor: 1, Mobility: 1, Charisma: 1, Intellect: 1 },
+    };
+    const { result } = renderHook(() => useActiveMissions({ rng: () => 0.99 }));
+
+    act(() => {
+      result.current.deployMission(mockMission, [weakAgent]);
+    });
+
+    const { outcome } = result.current.activeMissions[0];
+    expect(outcome.probability).toBeLessThan(0.99);
+    expect(outcome.success).toBe(false);
+    expect(outcome.roll).toBe(0.99);
+  });
+
+  it('should report the outcome on the completed mission', () => {
+    const onMissionComplete = vi.fn();
+    const weakAgent: Character = {
+      ...mockAgent,
+      stats: { Combat: 1, Vigor: 1, Mobility: 1, Charisma: 1, Intellect: 1 },
+    };
+    const { result } = renderHook(() => useActiveMissions({ onMissionComplete, rng: () => 0.99 }));
+
+    act(() => {
+      result.current.deployMission(mockMission, [weakAgent]);
+    });
+
+    act(() => {
+      vi.advanceTimersByTime(12000);
+    });
+
+    expect(onMissionComplete).toHaveBeenCalledTimes(1);
+    expect(onMissionComplete.mock.calls[0][0].outcome.success).toBe(false);
+    expect(result.current.completedMissions[0].outcome.success).toBe(false);
+  });
+
   it('should calculate correct mission duration with flight speed', () => {
     const flyingAgent: Character = {
       ...mockAgent,

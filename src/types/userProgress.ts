@@ -3,6 +3,7 @@ export interface MissionCompletion {
   completedAt: number;
   agents: string[]; // agent IDs
   experienceGained: number;
+  success: boolean;
 }
 
 export interface UserProgress {

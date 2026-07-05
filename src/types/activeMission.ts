@@ -1,3 +1,4 @@
+import type { MissionOutcome } from '../engine/resolution';
 import type { Character } from './character';
 import type { Mission } from './mission';
 
@@ -15,6 +16,7 @@ export interface ActiveMission {
   travelReturnDuration: number;
   restDuration: number; // Calculated based on slowest agent
   totalDuration: number;
+  outcome: MissionOutcome; // Rolled at deploy time, revealed on completion
 }
 
 export function createActiveMission(
@@ -23,7 +25,8 @@ export function createActiveMission(
   travelOutboundDuration: number,
   missionDuration: number,
   travelReturnDuration: number,
-  restDuration: number
+  restDuration: number,
+  outcome: MissionOutcome
 ): ActiveMission {
   const now = Date.now();
   const totalDuration =
@@ -41,6 +44,7 @@ export function createActiveMission(
     travelReturnDuration,
     restDuration,
     totalDuration,
+    outcome,
   };
 }
 
