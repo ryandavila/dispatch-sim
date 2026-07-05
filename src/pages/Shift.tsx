@@ -20,7 +20,7 @@ import type { ShiftRewards, ShiftSummary } from '../types/shiftSummary';
 import { loadMissions } from '../utils/dataLoader';
 import { getMissionTimeBreakdown } from '../utils/missionTime';
 
-interface FinalizeDeps {
+export interface FinalizeDeps {
   currentShiftNumber: number;
   agents: Character[];
   grantAvailablePoints: (agentId: string, amount: number) => void;
@@ -34,9 +34,12 @@ interface FinalizeDeps {
  * receives the stat points — seeded off the shift seed + its success count so
  * the pick is reproducible and decorrelated from the schedule stream.
  */
-function finalizeShift(state: ShiftState, deps: FinalizeDeps): void {
+export function finalizeShift(state: ShiftState, deps: FinalizeDeps): void {
   const rewards = scoreShift(state.tally);
 
+  // If a shift earns stat points but no eligible (non-fixed-rank) hero exists,
+  // they're dropped — account rewards still credit and the summary records no
+  // recipient. Can't happen with the real roster (only Phenomaman is fixed).
   let statPointAgentId: string | undefined;
   if (rewards.statPoints > 0) {
     // Phenomaman (fixedRank) can't spend points, so exclude fixed-rank heroes.

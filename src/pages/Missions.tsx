@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { MissionHistorySection } from '../components/MissionHistorySection';
 import { MissionList } from '../components/MissionList';
 import { OverlayRadarChart } from '../components/OverlayRadarChart';
+import { ShiftHistorySection } from '../components/ShiftHistorySection';
+import { useAgentProgress } from '../hooks/useAgentProgress';
 import { useUserProgress } from '../hooks/useUserProgress';
 import type { Mission } from '../types/mission';
 import { getDifficultyColor } from '../utils/colors';
@@ -10,7 +12,7 @@ import { loadMissions } from '../utils/dataLoader';
 
 type DifficultyFilter = Mission['difficulty'] | 'All';
 
-type MissionTab = 'available' | 'history';
+type MissionTab = 'available' | 'history' | 'shifts';
 
 const DIFFICULTIES: DifficultyFilter[] = ['All', 'Easy', 'Medium', 'Hard', 'Extreme'];
 
@@ -24,6 +26,7 @@ export function Missions() {
   const [difficultyFilter, setDifficultyFilter] = useState<DifficultyFilter>('All');
   const [activeTab, setActiveTab] = useState<MissionTab>('available');
   const { userProgress, isMissionCompleted } = useUserProgress();
+  const { agents } = useAgentProgress();
 
   // Not-yet-cleared missions, optionally narrowed by difficulty.
   const filteredMissions = useMemo(() => {
@@ -66,6 +69,13 @@ export function Missions() {
           className={`mission-tab ${activeTab === 'history' ? 'active' : ''}`}
         >
           History ({userProgress.missionCompletions.length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('shifts')}
+          className={`mission-tab ${activeTab === 'shifts' ? 'active' : ''}`}
+        >
+          Shifts ({userProgress.shiftSummaries.length})
         </button>
       </div>
 
@@ -131,8 +141,10 @@ export function Missions() {
             </div>
           )}
         </>
-      ) : (
+      ) : activeTab === 'history' ? (
         <MissionHistorySection userProgress={userProgress} allMissions={missions} />
+      ) : (
+        <ShiftHistorySection summaries={userProgress.shiftSummaries} allAgents={agents} />
       )}
     </div>
   );
