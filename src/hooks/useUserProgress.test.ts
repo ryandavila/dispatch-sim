@@ -62,6 +62,38 @@ describe('useUserProgress', () => {
     expect(result.current.userProgress.medKits).toBe(3);
     expect(result.current.userProgress.synergyDispatchCounts).toEqual({});
     expect(result.current.userProgress.pityRemaining).toBe(3);
+    expect(result.current.userProgress.shiftSummaries).toEqual([]);
+  });
+
+  it('records shift summaries in order (source of truth for shift number)', () => {
+    const { result } = renderHook(() => useUserProgress());
+
+    act(() => {
+      result.current.recordShiftSummary({
+        shiftNumber: 1,
+        completedAt: 1000,
+        tally: { succeeded: 9, failed: 2, missed: 1 },
+        seed: 1,
+        rewards: { medKits: 1, pityCharges: 0, statPoints: 2 },
+      });
+    });
+    act(() => {
+      result.current.recordShiftSummary({
+        shiftNumber: 2,
+        completedAt: 2000,
+        tally: { succeeded: 12, failed: 0, missed: 0 },
+        seed: 2,
+        rewards: { medKits: 3, pityCharges: 2, statPoints: 4 },
+        statPointAgentId: 'hero-1',
+      });
+    });
+
+    const { shiftSummaries } = result.current.userProgress;
+    expect(shiftSummaries).toHaveLength(2);
+    expect(shiftSummaries.map((s) => s.shiftNumber)).toEqual([1, 2]);
+    expect(shiftSummaries[1].statPointAgentId).toBe('hero-1');
+    // Length + 1 is the next shift number.
+    expect(shiftSummaries.length + 1).toBe(3);
   });
 
   it('should add mission completion and update total XP', () => {

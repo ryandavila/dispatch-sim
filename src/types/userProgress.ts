@@ -1,3 +1,5 @@
+import type { ShiftSummary } from './shiftSummary';
+
 export interface MissionCompletion {
   missionId: string;
   completedAt: number;
@@ -15,6 +17,8 @@ export interface UserProgress {
   synergyDispatchCounts: Record<string, number>;
   /** Remaining guaranteed-success charges for >76% calls. */
   pityRemaining: number;
+  /** Recorded, fully-settled shifts; length + 1 is the current shift number. */
+  shiftSummaries: ShiftSummary[];
 }
 
 /** Med kits a new player starts with. */
@@ -30,4 +34,5 @@ export const INITIAL_USER_PROGRESS: UserProgress = {
   medKits: STARTING_MED_KITS,
   synergyDispatchCounts: {},
   pityRemaining: INITIAL_PITY_CHARGES,
+  shiftSummaries: [],
 };

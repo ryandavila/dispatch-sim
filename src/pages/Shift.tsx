@@ -2,23 +2,34 @@ import { useState } from 'react';
 import { ActiveMissionsSection } from '../components/ActiveMissionsSection';
 import { MissionDetailsSection } from '../components/MissionDetailsSection';
 import { ShiftCallCard } from '../components/ShiftCallCard';
+import { ShiftHistorySection } from '../components/ShiftHistorySection';
 import { ShiftReview } from '../components/ShiftReview';
 import { getEffectiveStats, isDowned } from '../engine/injury';
 import { applyProbabilityModifiers, calculateTeamSuccessProbability } from '../engine/resolution';
+import { scoreShift } from '../engine/shiftScore';
 import { getTeamSynergies } from '../engine/synergy';
 import { useAgentProgress } from '../hooks/useAgentProgress';
 import { useShift } from '../hooks/useShift';
 import { useUserProgress } from '../hooks/useUserProgress';
 import type { ActiveMission } from '../types/activeMission';
 import type { Character } from '../types/character';
+import type { ShiftState } from '../types/shift';
 import { loadMissions } from '../utils/dataLoader';
 import { getMissionTimeBreakdown } from '../utils/missionTime';
 
 export function Shift() {
   const missions = loadMissions();
   const { agents, awardExperience, applyInjuries } = useAgentProgress();
-  const { userProgress, addMissionCompletion, recordSynergyDispatch, consumePity } =
-    useUserProgress();
+  const {
+    userProgress,
+    addMissionCompletion,
+    recordSynergyDispatch,
+    recordShiftSummary,
+    consumePity,
+  } = useUserProgress();
+
+  // Source of truth for "which shift am I on": next = prior summaries + 1.
+  const currentShiftNumber = userProgress.shiftSummaries.length + 1;
 
   const [selectedCallId, setSelectedCallId] = useState<string | null>(null);
   const [selectedAgents, setSelectedAgents] = useState<Character[]>([]);
@@ -45,10 +56,23 @@ export function Shift() {
     }
   };
 
+  // When the shift fully settles, score it and record the summary. Rewards are
+  // computed here (scoreShift is pure); crediting them to progress is Track 2.
+  const handleShiftFinalized = (state: ShiftState) => {
+    recordShiftSummary({
+      shiftNumber: currentShiftNumber,
+      completedAt: Date.now(),
+      tally: state.tally,
+      seed: state.config.seed,
+      rewards: scoreShift(state.tally),
+    });
+  };
+
   const { shift, now, start, deploy, pause, resume } = useShift({
     missions,
     storageKey: 'dispatch-sim-shift',
     onMissionComplete: handleMissionComplete,
+    onShiftFinalized: handleShiftFinalized,
     getSynergyDispatchCount: (pairKey) => userProgress.synergyDispatchCounts[pairKey] ?? 0,
     pityRemaining: userProgress.pityRemaining,
     onDeployRolled: ({ synergyPairKeys, pityUsed }) => {
@@ -139,16 +163,21 @@ export function Shift() {
     return (
       <div className="shift-page">
         <div className="shift-intro">
-          <h2>Start a Shift</h2>
+          <h2>Start Shift {currentShiftNumber}</h2>
           <p>
             Calls arrive over ~3 minutes, each with a countdown. Respond in time or they auto-fail.
             Opening a call pauses the clock so you can pick a team. Unanswered calls are{' '}
             <strong>missed</strong>; deployed calls that lose the roll are <strong>failed</strong>{' '}
-            and injure a hero.
+            and injure a hero. Later shifts bring more calls on tighter timers.
           </p>
           <button type="button" className="deploy-button" onClick={() => start()}>
             Start Shift
           </button>
+        </div>
+
+        <div className="shift-history">
+          <h3>Campaign History</h3>
+          <ShiftHistorySection summaries={userProgress.shiftSummaries} allAgents={agents} />
         </div>
       </div>
     );

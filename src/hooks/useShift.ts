@@ -49,6 +49,13 @@ export interface UseShiftOptions {
   onCallMissed?: (call: ShiftCall) => void;
   onCallSpawned?: (call: ShiftCall) => void;
   onShiftEnded?: (tally: ShiftTally) => void;
+  /**
+   * Fired once the shift is fully settled — ended AND every in-flight mission
+   * has finished (Decision #6). The tally is final at this point, so this is
+   * where end-of-shift rewards are scored and the summary is recorded. Receives
+   * the final `ShiftState` for its `tally` and `config.seed`.
+   */
+  onShiftFinalized?: (state: ShiftState) => void;
   getSynergyDispatchCount?: (pairKey: string) => number;
   pityRemaining?: number;
   onDeployRolled?: (info: DeployRollInfo) => void;
@@ -192,6 +199,11 @@ export function useShift(options: UseShiftOptions) {
       }
       case 'shift-ended':
         opts.onShiftEnded?.(state.tally);
+        break;
+      case 'shift-finalized':
+        // `state` is the already-applied final state (applyState ran before
+        // this emit loop), so its tally reflects every settled mission.
+        opts.onShiftFinalized?.(state);
         break;
     }
   }, []);

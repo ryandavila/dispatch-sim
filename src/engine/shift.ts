@@ -142,6 +142,18 @@ export function advanceShift(state: ShiftState, nowMs: number, rng: Rng): ShiftS
     events.push({ type: 'shift-ended' });
   }
 
+  // The shift is *finalized* — its tally is final and rewards can be scored —
+  // only once it has ended AND every in-flight mission has settled (Decision
+  // #6 lets missions outlive the spawn phase). Emit exactly once, on the tick
+  // that first makes it true; the hook stops ticking afterwards so it can't
+  // re-fire. This covers both "ended with nothing in flight" (same tick as
+  // shift-ended) and "ended, then the last mission settles on a later tick."
+  const wasFinal = state.phase === 'ended' && state.activeMissions.length === 0;
+  const isFinal = phase === 'ended' && activeMissions.length === 0;
+  if (isFinal && !wasFinal) {
+    events.push({ type: 'shift-finalized' });
+  }
+
   return {
     state: { ...state, phase, calls, activeMissions, tally, lastTickMs: nowMs },
     events,

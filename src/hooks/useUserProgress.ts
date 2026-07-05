@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import type { ShiftSummary } from '../types/shiftSummary';
 import type { MissionCompletion, UserProgress } from '../types/userProgress';
 import { INITIAL_USER_PROGRESS } from '../types/userProgress';
 
@@ -67,6 +68,18 @@ export function useUserProgress() {
     });
   };
 
+  /**
+   * Append a completed-shift summary. Its position (length before appending)
+   * is the source of truth for the shift number, so summaries are only ever
+   * appended, never reordered.
+   */
+  const recordShiftSummary = (summary: ShiftSummary) => {
+    setUserProgress((prev) => ({
+      ...prev,
+      shiftSummaries: [...prev.shiftSummaries, summary],
+    }));
+  };
+
   /** Spend one pity charge (when the pity guarantee fires on a deploy). */
   const consumePity = () => {
     setUserProgress((prev) => ({
@@ -88,6 +101,7 @@ export function useUserProgress() {
     addMissionCompletion,
     consumeMedKit,
     recordSynergyDispatch,
+    recordShiftSummary,
     consumePity,
     isMissionCompleted,
     resetProgress,

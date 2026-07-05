@@ -201,6 +201,31 @@ describe('useShift', () => {
     expect(onShiftEnded).toHaveBeenCalledTimes(1);
     expect(onShiftEnded).toHaveBeenCalledWith(expect.objectContaining({ succeeded: 0, failed: 0 }));
   });
+
+  it('fires onShiftFinalized once with the final state when nothing is in flight', () => {
+    const onShiftFinalized = vi.fn();
+    const shortConfig: ShiftConfig = { ...CONFIG, shiftDurationMs: 6000, callTimerMs: 2000 };
+    const { result, clock } = setup({ onShiftFinalized, config: shortConfig });
+    act(() => result.current.start(shortConfig));
+
+    act(() => {
+      clock.set(20_000);
+      vi.advanceTimersByTime(100);
+    });
+
+    expect(result.current.shift.phase).toBe('ended');
+    expect(onShiftFinalized).toHaveBeenCalledTimes(1);
+    const [finalState] = onShiftFinalized.mock.calls[0];
+    expect(finalState.config.seed).toBe(shortConfig.seed);
+    expect(finalState.activeMissions).toHaveLength(0);
+
+    // A further tick does not re-fire the finalize callback.
+    act(() => {
+      clock.set(30_000);
+      vi.advanceTimersByTime(100);
+    });
+    expect(onShiftFinalized).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe('useShift — persistence (freeze & resume)', () => {

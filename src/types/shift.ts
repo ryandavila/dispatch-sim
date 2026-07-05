@@ -63,7 +63,12 @@ export interface ShiftState {
   lastTickMs: number;
 }
 
-export type ShiftEventType = 'call-spawned' | 'call-missed' | 'mission-completed' | 'shift-ended';
+export type ShiftEventType =
+  | 'call-spawned'
+  | 'call-missed'
+  | 'mission-completed'
+  | 'shift-ended'
+  | 'shift-finalized';
 
 export interface ShiftEvent {
   type: ShiftEventType;

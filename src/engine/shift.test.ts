@@ -249,6 +249,49 @@ describe('advanceShift — shift end', () => {
       expect.objectContaining({ type: 'mission-completed', activeMissionId: 'am-0' })
     );
   });
+
+  it('finalizes on the same tick when the shift ends with nothing in flight', () => {
+    const config: ShiftConfig = {
+      ...DEFAULT_SHIFT_CONFIG,
+      shiftDurationMs: 10_000,
+      callTimerMs: 2000,
+    };
+    const state = stateWith([pendingCall('call-0', 1000, 2000)], { config });
+    const opened = advanceShift(state, 1000, createRng(1)).state;
+    const drained = advanceShift(opened, opened.calls[0].expiresAt, createRng(1)).state;
+
+    const { state: ended, events } = advanceShift(drained, 10_000, createRng(1));
+    expect(ended.phase).toBe('ended');
+    expect(events).toContainEqual({ type: 'shift-ended' });
+    expect(events).toContainEqual({ type: 'shift-finalized' });
+  });
+
+  it('defers finalize until the last in-flight mission settles, then emits once', () => {
+    const config: ShiftConfig = { ...DEFAULT_SHIFT_CONFIG, shiftDurationMs: 10_000 };
+    const opened = advanceShift(
+      stateWith([pendingCall('call-0', 1000)], { config }),
+      1000,
+      createRng(1)
+    ).state;
+    const mission = activeMission('am-0', 1000, 20_000, true);
+    const assigned = assignCall(opened, 'call-0', mission);
+
+    // Shift ends with the mission still returning — NOT finalized yet.
+    const atEnd = advanceShift(assigned, 10_000, createRng(1));
+    expect(atEnd.state.phase).toBe('ended');
+    expect(atEnd.state.activeMissions).toHaveLength(1);
+    expect(atEnd.events).toContainEqual({ type: 'shift-ended' });
+    expect(atEnd.events).not.toContainEqual({ type: 'shift-finalized' });
+
+    // The tick that settles the last mission emits shift-finalized.
+    const settled = advanceShift(atEnd.state, 21_000, createRng(1));
+    expect(settled.state.activeMissions).toHaveLength(0);
+    expect(settled.events).toContainEqual({ type: 'shift-finalized' });
+
+    // A further tick does not re-emit (already fully settled).
+    const after = advanceShift(settled.state, 22_000, createRng(1));
+    expect(after.events).not.toContainEqual({ type: 'shift-finalized' });
+  });
 });
 
 describe('advanceShift — idempotency & pause', () => {
