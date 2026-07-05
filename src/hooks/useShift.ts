@@ -62,6 +62,12 @@ export interface UseShiftOptions {
   /** ActiveMission id factory; injectable for deterministic tests. */
   createId?: () => string;
   /**
+   * How `start()` derives the schedule's mission pool from the catalog. The
+   * pool may repeat ids to weight spawn odds (see `missionPoolForShift`); the
+   * schedule bake draws uniformly from it. Defaults to one entry per mission.
+   */
+  buildPool?: (missions: Mission[]) => string[];
+  /**
    * localStorage key for freeze-&-resume persistence (Decision #5). When set,
    * an in-progress shift survives a refresh, resuming as if no time passed.
    * Omit to keep the shift ephemeral (the default; tests rely on this).
@@ -246,7 +252,7 @@ export function useShift(options: UseShiftOptions) {
       pausedAccumRef.current = 0;
       pauseStartWallRef.current = null;
       const cfg = config ?? opts.config ?? DEFAULT_SHIFT_CONFIG;
-      const pool = opts.missions.map((m) => m.id);
+      const pool = opts.buildPool ? opts.buildPool(opts.missions) : opts.missions.map((m) => m.id);
       applyState(beginShift(cfg, clock(), rng, pool));
     },
     [applyState]

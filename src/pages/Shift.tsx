@@ -7,6 +7,7 @@ import { ShiftReview } from '../components/ShiftReview';
 import { getEffectiveStats, isDowned } from '../engine/injury';
 import { applyProbabilityModifiers, calculateTeamSuccessProbability } from '../engine/resolution';
 import { createRng } from '../engine/rng';
+import { configForShift, missionPoolForShift } from '../engine/shiftLadder';
 import { pickStatPointRecipient, scoreShift } from '../engine/shiftScore';
 import { getTeamSynergies } from '../engine/synergy';
 import { useAgentProgress } from '../hooks/useAgentProgress';
@@ -134,6 +135,8 @@ export function Shift() {
   const { shift, now, start, deploy, pause, resume } = useShift({
     missions,
     storageKey: 'dispatch-sim-shift',
+    // Later shifts draw from a Hard/Extreme-weighted pool (escalation, Track 3).
+    buildPool: (pool) => missionPoolForShift(currentShiftNumber, pool),
     onMissionComplete: handleMissionComplete,
     onShiftFinalized: handleShiftFinalized,
     getSynergyDispatchCount: (pairKey) => userProgress.synergyDispatchCounts[pairKey] ?? 0,
@@ -194,10 +197,13 @@ export function Shift() {
     closePanel();
   };
 
+  // Escalating ladder (Track 3): shift N gets more calls on tighter timers.
+  const startShift = () => start(configForShift(currentShiftNumber));
+
   const handleNewShift = () => {
     setSelectedCallId(null);
     setSelectedAgents([]);
-    start();
+    startShift();
   };
 
   // Deploy-panel derived stats — identical modifier stack to the deploy roll.
@@ -233,7 +239,7 @@ export function Shift() {
             <strong>missed</strong>; deployed calls that lose the roll are <strong>failed</strong>{' '}
             and injure a hero. Later shifts bring more calls on tighter timers.
           </p>
-          <button type="button" className="deploy-button" onClick={() => start()}>
+          <button type="button" className="deploy-button" onClick={startShift}>
             Start Shift
           </button>
         </div>

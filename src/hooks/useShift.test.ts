@@ -226,6 +226,17 @@ describe('useShift', () => {
     });
     expect(onShiftFinalized).toHaveBeenCalledTimes(1);
   });
+
+  it('bakes the schedule from buildPool (weighted mission pool) when provided', () => {
+    const other: Mission = { ...MISSION, id: 'm2' };
+    // buildPool ignores the default one-per-mission and forces every call to m2.
+    const { result } = setup({ missions: [MISSION, other], buildPool: () => ['m2'] });
+    act(() => result.current.start());
+
+    const missionIds = new Set(result.current.shift.calls.map((c) => c.missionId));
+    expect(missionIds).toEqual(new Set(['m2']));
+    expect(result.current.shift.calls.length).toBeGreaterThan(0);
+  });
 });
 
 describe('useShift — persistence (freeze & resume)', () => {
