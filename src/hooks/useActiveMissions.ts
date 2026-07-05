@@ -127,7 +127,8 @@ export function useActiveMissions(options: UseActiveMissionsOptions = {}) {
 
     onDeployRolled?.({
       synergyPairKeys: teamSynergies.map(({ pair }) => synergyPairKey(pair[0], pair[1])),
-      pityUsed: pityApplies,
+      // Only report pity as used (→ consume a charge) when it actually saved the roll.
+      pityUsed: outcome.pityUsed ?? false,
     });
 
     const newActiveMission = createActiveMission(

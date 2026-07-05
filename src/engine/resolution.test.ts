@@ -321,8 +321,8 @@ describe('resolveMissionOutcome', () => {
     expect(resolveMissionOutcome(0.6, () => 0.5).pityUsed).toBe(false);
   });
 
-  it('should force success on a would-be failure when pity applies', () => {
-    // roll 0.9 >= 0.8 would fail, but pity guarantees success
+  it('should force success and mark pity used on a would-be failure', () => {
+    // roll 0.9 >= 0.8 would fail, but pity guarantees success and spends a charge
     const outcome = resolveMissionOutcome(0.8, () => 0.9, true);
 
     expect(outcome.success).toBe(true);
@@ -330,10 +330,11 @@ describe('resolveMissionOutcome', () => {
     expect(outcome.roll).toBe(0.9);
   });
 
-  it('should mark pity as used even when the roll would have succeeded', () => {
+  it('should NOT use pity when the roll would have succeeded anyway', () => {
+    // roll 0.1 < 0.8 is a natural success, so pity saves nothing and is not spent
     const outcome = resolveMissionOutcome(0.8, () => 0.1, true);
 
     expect(outcome.success).toBe(true);
-    expect(outcome.pityUsed).toBe(true);
+    expect(outcome.pityUsed).toBe(false);
   });
 });

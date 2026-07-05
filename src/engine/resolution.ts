@@ -105,13 +105,20 @@ export interface MissionOutcome {
   probability: number;
   /** The sampled value, 0-1. Success when roll < probability. */
   roll: number;
-  /** True when the pity guarantee forced this outcome to be a success. */
+  /**
+   * True only when pity actually converted a would-be failure into a success —
+   * i.e. a charge was spent to save this call. A high-probability call that
+   * rolled a natural success does NOT set this (and so keeps its charge).
+   */
   pityUsed?: boolean;
 }
 
 /**
  * Single Bernoulli roll deciding whether a mission succeeds. When
- * `pityApplies` is true the outcome is a forced success (pity guarantee).
+ * `pityApplies` is true the call is guaranteed to succeed, but a pity charge is
+ * only considered *used* (`pityUsed`) when the natural roll would have failed —
+ * so pity is spent only when it saves you, never on a call that would have won
+ * on its own.
  */
 export function resolveMissionOutcome(
   probability: number,
@@ -119,10 +126,11 @@ export function resolveMissionOutcome(
   pityApplies: boolean = false
 ): MissionOutcome {
   const roll = rng();
+  const naturalSuccess = roll < probability;
   return {
-    success: pityApplies || roll < probability,
+    success: naturalSuccess || pityApplies,
     probability,
     roll,
-    pityUsed: pityApplies,
+    pityUsed: pityApplies && !naturalSuccess,
   };
 }
