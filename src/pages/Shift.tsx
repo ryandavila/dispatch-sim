@@ -16,6 +16,7 @@ import { useShift } from '../hooks/useShift';
 import { useUserProgress } from '../hooks/useUserProgress';
 import '../styles/dispatch.css';
 import { getEffectiveStats } from '../engine/injury';
+import { splitXpPool } from '../engine/xp';
 import type { ActiveMission } from '../types/activeMission';
 import type { Character } from '../types/character';
 import type { ShiftState } from '../types/shift';
@@ -154,6 +155,10 @@ export function Shift() {
   // Same completion handling as before: XP on success, injuries on failure,
   // and a recorded completion either way. The mission then joins the report
   // queue — outcome hidden until the player opens the report.
+  //
+  // experienceGained recorded on the completion is the FULL pool (account-level
+  // total XP counts the pool once); what's actually credited per hero is that
+  // pool split evenly via splitXpPool, matching the real game's "SPLIT N WAYS".
   const handleMissionComplete = (activeMission: ActiveMission) => {
     const { success } = activeMission.outcome;
     const experienceGained = success ? (activeMission.mission.rewards?.experience ?? 0) : 0;
@@ -168,7 +173,8 @@ export function Shift() {
     });
 
     if (success) {
-      awardExperience(agentIds, experienceGained);
+      const shares = splitXpPool(experienceGained, agentIds.length);
+      awardExperience(agentIds.map((agentId, i) => ({ agentId, amount: shares[i] })));
     } else {
       applyInjuries(agentIds);
     }
@@ -278,13 +284,16 @@ export function Shift() {
     resume();
     if (report?.outcome.success) {
       const xp = report.mission.rewards?.experience ?? 0;
-      const share = Math.max(1, Math.floor(xp / report.agents.length));
+      // Same split as the actual credit (splitXpPool), so what pops here always
+      // matches what landed in useAgentProgress — shares can differ by 1
+      // between heroes; no artificial min-1 floor.
+      const shares = splitXpPool(xp, report.agents.length);
       const stamp = Date.now();
       setXpPops((prev) => [
         ...prev,
-        ...report.agents.map((a) => ({
+        ...report.agents.map((a, i) => ({
           agentId: a.id,
-          amount: share,
+          amount: shares[i],
           key: `${report.id}-${a.id}`,
         })),
       ]);

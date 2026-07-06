@@ -122,7 +122,7 @@ describe('useAgentProgress', () => {
     const { result } = renderHook(() => useAgentProgress());
 
     act(() => {
-      result.current.awardExperience(['agent-1'], 100);
+      result.current.awardExperience([{ agentId: 'agent-1', amount: 100 }]);
     });
 
     expect(result.current.agents[0].experience).toBe(100);
@@ -133,7 +133,7 @@ describe('useAgentProgress', () => {
 
     // Level 2 requires 1000 XP total
     act(() => {
-      result.current.awardExperience(['agent-1'], 1000);
+      result.current.awardExperience([{ agentId: 'agent-1', amount: 1000 }]);
     });
 
     expect(result.current.agents[0].level).toBe(2);
@@ -146,7 +146,7 @@ describe('useAgentProgress', () => {
 
     // Level 3 requires 2300 XP total (1000 + 1300)
     act(() => {
-      result.current.awardExperience(['agent-1'], 2300);
+      result.current.awardExperience([{ agentId: 'agent-1', amount: 2300 }]);
     });
 
     expect(result.current.agents[0].level).toBe(3);
@@ -159,7 +159,7 @@ describe('useAgentProgress', () => {
 
     // cheap-agent reaches level 2 at 400 XP
     act(() => {
-      result.current.awardExperience(['cheap-agent'], 400);
+      result.current.awardExperience([{ agentId: 'cheap-agent', amount: 400 }]);
     });
 
     const cheapAgent = result.current.agents.find((a) => a.id === 'cheap-agent');
@@ -171,7 +171,7 @@ describe('useAgentProgress', () => {
     const { result } = renderHook(() => useAgentProgress());
 
     act(() => {
-      result.current.awardExperience(['fixed-agent'], 10000);
+      result.current.awardExperience([{ agentId: 'fixed-agent', amount: 10000 }]);
     });
 
     const fixedAgent = result.current.agents.find((a) => a.id === 'fixed-agent');
@@ -185,7 +185,7 @@ describe('useAgentProgress', () => {
 
     // Cap is 19800 XP (level 10) on the default curve
     act(() => {
-      result.current.awardExperience(['agent-1'], 1_000_000);
+      result.current.awardExperience([{ agentId: 'agent-1', amount: 1_000_000 }]);
     });
 
     expect(result.current.agents[0].level).toBe(10);
@@ -194,7 +194,7 @@ describe('useAgentProgress', () => {
 
     // Further awards are ignored
     act(() => {
-      result.current.awardExperience(['agent-1'], 500);
+      result.current.awardExperience([{ agentId: 'agent-1', amount: 500 }]);
     });
 
     expect(result.current.agents[0].experience).toBe(19800);
@@ -205,11 +205,45 @@ describe('useAgentProgress', () => {
     const { result } = renderHook(() => useAgentProgress());
 
     act(() => {
-      result.current.awardExperience(['agent-1', 'agent-2'], 100);
+      result.current.awardExperience([
+        { agentId: 'agent-1', amount: 100 },
+        { agentId: 'agent-2', amount: 100 },
+      ]);
     });
 
     expect(result.current.agents[0].experience).toBe(100);
     expect(result.current.agents[1].experience).toBe(100);
+  });
+
+  it('should split per-agent awards independently (e.g. a pooled mission reward)', () => {
+    const { result } = renderHook(() => useAgentProgress());
+
+    // Mimics splitXpPool(100, 3) = [34, 33, 33]
+    act(() => {
+      result.current.awardExperience([
+        { agentId: 'agent-1', amount: 34 },
+        { agentId: 'agent-2', amount: 33 },
+        { agentId: 'cheap-agent', amount: 33 },
+      ]);
+    });
+
+    expect(result.current.agents[0].experience).toBe(34);
+    expect(result.current.agents[1].experience).toBe(33);
+    expect(result.current.agents.find((a) => a.id === 'cheap-agent')?.experience).toBe(33);
+  });
+
+  it('should skip zero and negative awards', () => {
+    const { result } = renderHook(() => useAgentProgress());
+
+    act(() => {
+      result.current.awardExperience([
+        { agentId: 'agent-1', amount: 0 },
+        { agentId: 'agent-2', amount: -50 },
+      ]);
+    });
+
+    expect(result.current.agents[0].experience).toBe(0);
+    expect(result.current.agents[1].experience).toBe(0);
   });
 
   it('should update agent stats and persist them', () => {
@@ -237,7 +271,7 @@ describe('useAgentProgress', () => {
     const { result } = renderHook(() => useAgentProgress());
 
     act(() => {
-      result.current.awardExperience(['agent-1'], 100);
+      result.current.awardExperience([{ agentId: 'agent-1', amount: 100 }]);
     });
 
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -250,7 +284,7 @@ describe('useAgentProgress', () => {
     const { result } = renderHook(() => useAgentProgress());
 
     act(() => {
-      result.current.awardExperience(['agent-1'], 200);
+      result.current.awardExperience([{ agentId: 'agent-1', amount: 200 }]);
     });
 
     expect(result.current.agents[0].experience).toBe(200);
@@ -344,7 +378,7 @@ describe('useAgentProgress', () => {
       result.current.applyInjuries(['agent-1']);
     });
     act(() => {
-      result.current.awardExperience(['agent-1'], 100);
+      result.current.awardExperience([{ agentId: 'agent-1', amount: 100 }]);
     });
 
     expect(result.current.agents[0].injuryCount).toBe(1);
@@ -392,7 +426,7 @@ describe('useAgentProgress', () => {
 
     // Then award XP
     act(() => {
-      result.current.awardExperience(['agent-1'], 100);
+      result.current.awardExperience([{ agentId: 'agent-1', amount: 100 }]);
     });
 
     expect(result.current.agents[0].stats.Combat).toBe(4); // 2 + 2, preserved

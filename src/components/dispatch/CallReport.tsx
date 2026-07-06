@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { useMemo, useState } from 'react';
 import { getEffectiveStats, isDowned, isInjured } from '../../engine/injury';
 import { combineTeamStats } from '../../engine/resolution';
+import { splitXpPool } from '../../engine/xp';
 import type { ActiveMission } from '../../types/activeMission';
 import type { Character } from '../../types/character';
 import { PILLARS } from '../../types/stats';
@@ -67,6 +68,10 @@ export function CallReport({ report, agents, onDismiss }: CallReportProps) {
   }, [report.id, landing]);
 
   const xp = mission.rewards?.experience ?? 0;
+  // The pool is split evenly across the deployed team (splitXpPool) — shares
+  // can differ by 1 hero-to-hero, so each crew chip shows its actual share
+  // rather than a shared/rounded number.
+  const xpShares = splitXpPool(xp, report.agents.length);
   const crew = report.agents.map(
     (deployed) => agents.find((a) => a.id === deployed.id) ?? deployed
   );
@@ -126,9 +131,10 @@ export function CallReport({ report, agents, onDismiss }: CallReportProps) {
             </div>
 
             <div className="dm-report-crew">
-              {crew.map((agent) => (
+              {crew.map((agent, i) => (
                 <span key={agent.id} className="sdn-chip">
                   {agent.name}
+                  {success && <span className="dm-condition">+{xpShares[i]} XP</span>}
                   {!success && (
                     <span className={`dm-condition ${isInjured(agent) ? 'hurt' : ''}`}>
                       {isDowned(agent) ? 'DOWNED' : isInjured(agent) ? 'INJURED' : ''}

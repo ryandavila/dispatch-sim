@@ -47,8 +47,20 @@ const mockAgents: Character[] = [
   },
 ];
 
+const agent3: Character = {
+  id: 'agent-3',
+  name: 'Test Agent 3',
+  level: 1,
+  experience: 50,
+  stats: { Combat: 2, Vigor: 3, Mobility: 2, Charisma: 2, Intellect: 2 },
+  availablePoints: 0,
+  canFly: false,
+  isFlightLicensed: false,
+  restTime: 5,
+};
+
 vi.mock('../utils/dataLoader', () => ({
-  loadAgents: vi.fn(() => mockAgents),
+  loadAgents: vi.fn(() => [...mockAgents, agent3]),
   loadMissions: vi.fn(() => [mockMission]),
   loadSynergies: vi.fn(() => []),
 }));
@@ -145,15 +157,38 @@ describe('Shift - injury/XP wiring on completion', () => {
     expect(progress['agent-2'].injuryCount).toBe(2);
   });
 
-  it('does not injure agents and awards XP when a mission succeeds', () => {
+  it('does not injure agents and splits the pooled XP reward evenly on success', () => {
     renderShift();
 
     act(() => {
       capturedOnMissionComplete?.(makeCompletedMission(true));
     });
 
+    // Mission rewards 100 XP total, pooled and split across the 2 deployed
+    // agents (splitXpPool(100, 2) = [50, 50]) — not credited in full to each.
     const progress = readAgentProgress();
     expect(progress['agent-1'].injuryCount).toBe(0);
-    expect(progress['agent-1'].experience).toBe(150); // 50 base + 100 reward
+    expect(progress['agent-1'].experience).toBe(100); // 50 base + 50 share
+    expect(progress['agent-2'].experience).toBe(100); // 50 base + 50 share
+  });
+
+  it('splits an uneven XP pool with the remainder going to earlier agents', () => {
+    renderShift();
+
+    const threeAgentMission: ActiveMission = {
+      ...makeCompletedMission(true),
+      mission: { ...mockMission, rewards: { experience: 100 } },
+      agents: [...mockAgents, agent3],
+    };
+
+    act(() => {
+      capturedOnMissionComplete?.(threeAgentMission);
+    });
+
+    // splitXpPool(100, 3) = [34, 33, 33]
+    const progress = readAgentProgress();
+    expect(progress['agent-1'].experience).toBe(84); // 50 base + 34 share
+    expect(progress['agent-2'].experience).toBe(83); // 50 base + 33 share
+    expect(progress['agent-3'].experience).toBe(83); // 50 base + 33 share
   });
 });

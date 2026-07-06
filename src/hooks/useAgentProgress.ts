@@ -69,14 +69,20 @@ export function useAgentProgress() {
   }, [agentProgress]);
 
   /**
-   * Award experience to agents and handle level ups
+   * Credit each agent its own XP amount and handle level ups. This is a
+   * generic per-agent credit primitive — callers that need to split a pooled
+   * reward (e.g. a mission's XP split among the deployed team) compute the
+   * shares themselves and pass one award per agent. Zero/negative amounts are
+   * skipped, so a zero share never touches an agent's progress entry.
    */
   const awardExperience = useCallback(
-    (agentIds: string[], xpAmount: number) => {
+    (awards: Array<{ agentId: string; amount: number }>) => {
       const baseAgents = loadAgents();
       const updates: AgentProgressData = {};
 
-      for (const agentId of agentIds) {
+      for (const { agentId, amount } of awards) {
+        if (amount <= 0) continue;
+
         const baseAgent = baseAgents.find((a) => a.id === agentId);
         if (!baseAgent) continue;
 
@@ -88,7 +94,7 @@ export function useAgentProgress() {
 
         // Apply experience and get updated character.
         // Fixed-rank and XP-capped agents come back unchanged.
-        const updatedAgent = applyExperience(currentAgent, xpAmount);
+        const updatedAgent = applyExperience(currentAgent, amount);
         if (updatedAgent === currentAgent) continue;
 
         // Store the progress
