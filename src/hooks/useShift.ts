@@ -6,7 +6,7 @@ import {
   calculateTeamSuccessProbability,
   resolveMissionOutcome,
 } from '../engine/resolution';
-import type { Rng } from '../engine/rng';
+import { createRng, hashSeed, type Rng } from '../engine/rng';
 import {
   advanceShift,
   assignCall,
@@ -44,7 +44,15 @@ export interface UseShiftOptions {
   config?: ShiftConfig;
   /** Real clock; injectable so tests can drive a fake. Default `Date.now`. */
   clock?: Clock;
-  /** Shared with the schedule bake so all randomness stays on one stream. */
+  /**
+   * Test seam: when supplied, this exact rng drives BOTH the schedule bake
+   * (`start`) and every deploy roll, consumed sequentially on one stream —
+   * preserving the original test contract byte-for-byte. Production code
+   * should leave this unset: `start` then seeds the bake from `config.seed`,
+   * and each `deploy` derives its own independent rng from
+   * `hashSeed(config.seed, callId)` (see `rng.ts` for the resume-safety
+   * rationale) instead of sharing a single stream/cursor.
+   */
   rng?: Rng;
   tickMs?: number;
   onMissionComplete?: (mission: ActiveMission) => void;
@@ -240,6 +248,9 @@ export function useShift(options: UseShiftOptions) {
     if (state.phase === 'idle' || state.phase === 'paused') {
       return;
     }
+    // advanceShift's rng param is reserved/unused today (see shift.ts) — no
+    // production rng to derive yet. Kept on the same opts.rng seam so a test
+    // that injects one still observes it if advanceShift ever starts drawing.
     const rng = optsRef.current.rng ?? Math.random;
     const step = advanceShift(state, virtualNow(), rng);
     if (step.state === state) {
@@ -269,10 +280,14 @@ export function useShift(options: UseShiftOptions) {
     (config?: ShiftConfig) => {
       const opts = optsRef.current;
       const clock = opts.clock ?? Date.now;
-      const rng = opts.rng ?? Math.random;
       pausedAccumRef.current = 0;
       pauseStartWallRef.current = null;
       const cfg = config ?? opts.config ?? DEFAULT_SHIFT_CONFIG;
+      // Test seam: an explicitly-injected rng drives the bake directly (as
+      // before). Production (no injected rng) seeds the one-time schedule
+      // bake from `cfg.seed` — see `rng.ts` (`hashSeed`) for why deploy-time
+      // rolls derive their own independent rng instead of sharing this stream.
+      const rng = opts.rng ?? createRng(cfg.seed);
       const pool = opts.buildPool ? opts.buildPool(opts.missions) : opts.missions.map((m) => m.id);
       const callTimerFor = (missionId: string) => {
         const mission = opts.missions.find((m) => m.id === missionId);
@@ -333,7 +348,12 @@ export function useShift(options: UseShiftOptions) {
         return null;
       }
 
-      const rng = opts.rng ?? Math.random;
+      // Test seam: an explicitly-injected rng is used directly, consumed on
+      // the same sequential stream as the bake (original contract). In
+      // production (no injected rng), each deploy derives its own rng from
+      // the shift seed + callId — resume-safe, since it depends only on which
+      // call this is, never on stream position (see `hashSeed` in rng.ts).
+      const rng = opts.rng ?? createRng(hashSeed(state.config.seed, callId));
       const now = virtualNow();
       const timeBreakdown = getMissionTimeBreakdown(mission, agents);
       const teamSynergies = getTeamSynergies(

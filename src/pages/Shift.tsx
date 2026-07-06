@@ -47,6 +47,18 @@ import { loadMissions } from '../utils/dataLoader';
 
 const REPORTS_STORAGE_KEY = 'dispatch-sim-reports';
 
+/**
+ * One-time entropy for a live shift's seed. Only ever called at the
+ * clock-in boundary (`startShift`) — never mid-shift — so it's fine to use
+ * real (non-deterministic) entropy here: the resulting seed is baked into
+ * `ShiftConfig` once and then persisted with the rest of the shift blob,
+ * making everything downstream of it (schedule bake, per-call deploy rng)
+ * reproducible for the life of that shift, reload included.
+ */
+function generateShiftSeed(): number {
+  return (Date.now() ^ Math.floor(Math.random() * 0xffffffff)) | 0;
+}
+
 export interface FinalizeDeps {
   currentShiftNumber: number;
   agents: Character[];
@@ -619,6 +631,13 @@ export function Shift() {
   };
 
   // Escalating ladder (Track 3): shift N gets more calls on tighter timers.
+  // The ladder's own `seed: n` is deterministic-but-not-random (every "shift
+  // 3" ever played would bake the same schedule) — production shifts replace
+  // it with fresh one-time entropy so each playthrough's schedule is unique.
+  // That seed then rides along in `ShiftConfig`/the persisted shift blob
+  // (useShift already persists the whole `ShiftState`), so a reloaded session
+  // reuses it — see `hashSeed` in engine/rng.ts for why that's enough to keep
+  // every deploy's outcome resume-safe without persisting an rng cursor.
   const startShift = () => {
     setSelectedCallId(null);
     setSelectedAgents([]);
@@ -626,7 +645,7 @@ export function Shift() {
     setOpenReportId(null);
     setXpPops([]);
     uplinks.resetReveals();
-    start(configForShift(currentShiftNumber));
+    start({ ...configForShift(currentShiftNumber), seed: generateShiftSeed() });
   };
 
   // Briefing-panel derived stats — identical modifier stack to the deploy roll.
