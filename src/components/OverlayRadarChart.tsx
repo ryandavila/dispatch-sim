@@ -25,7 +25,7 @@ export function OverlayRadarChart({
   size = 300,
   showSuccessProbability = false,
 }: OverlayRadarChartProps) {
-  const [_hoveredPillar, _setHoveredPillar] = useState<PillarType | null>(null);
+  const [hoveredPillar, setHoveredPillar] = useState<PillarType | null>(null);
 
   const center = size / 2;
   const radius = (size / 2) * 0.62;
@@ -131,14 +131,63 @@ export function OverlayRadarChart({
           );
         })}
 
-        {/* Vertex glyph badges */}
+        {/* Vertex glyph badges + hover hit-areas */}
         {PILLARS.map((pillar, index) => {
           const angle = startAngle + angleStep * index;
           const glyphX = center + glyphDistance * Math.cos(angle);
           const glyphY = center + glyphDistance * Math.sin(angle);
+          const hitPos = getMaxVertexPosition(index);
+          const isHovered = hoveredPillar === pillar;
 
           return (
             <g key={pillar}>
+              {/* Hover hit-area: sits on the outer (max-value) vertex, the one
+                  position that's stable across every layer's polygon. */}
+              <motion.circle
+                data-testid={`overlay-radar-hit-${pillar}`}
+                cx={hitPos.x}
+                cy={hitPos.y}
+                r={isHovered ? 9 : 7}
+                fill={isHovered ? 'rgba(244, 237, 220, 0.35)' : 'transparent'}
+                stroke={isHovered ? 'rgba(244, 237, 220, 0.85)' : 'transparent'}
+                strokeWidth="1.5"
+                style={{ cursor: 'default' }}
+                onMouseEnter={() => setHoveredPillar(pillar)}
+                onMouseLeave={() => setHoveredPillar(null)}
+              />
+
+              {/* Readout: each layer's value for the hovered pillar, stacked
+                  and color-matched to that layer's polygon/legend swatch. */}
+              {isHovered && (
+                <motion.g
+                  initial={{ opacity: 0, y: -5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <rect
+                    x={hitPos.x - 32}
+                    y={hitPos.y - 20 - layers.length * 16}
+                    width="64"
+                    height={layers.length * 16 + 6}
+                    fill="rgba(0, 0, 0, 0.8)"
+                    rx="4"
+                  />
+                  {layers.map((layer, layerIndex) => (
+                    <text
+                      key={layer.label}
+                      x={hitPos.x}
+                      y={hitPos.y - 20 - (layers.length - layerIndex - 1) * 16 - 5}
+                      textAnchor="middle"
+                      fill={layer.color.replace(/0\.\d+\)$/, '1)')}
+                      fontSize="11"
+                      fontWeight="bold"
+                    >
+                      {layer.label.toUpperCase()} {layer.stats[pillar]}
+                    </text>
+                  ))}
+                </motion.g>
+              )}
+
               <circle
                 cx={glyphX}
                 cy={glyphY}
