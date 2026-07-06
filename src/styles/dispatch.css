@@ -303,8 +303,12 @@
   position: absolute;
   top: 12px;
   right: 12px;
-  bottom: 12px;
   width: min(400px, 46%);
+  /* The board is taller than short viewports (1000/620 aspect), so cap the
+     window against BOTH the board and the viewport: the pinned actions row
+     must stay on-screen at 1280×800 without any page scrolling. 170px =
+     chrome above the board (banner + nav + board title) plus a margin. */
+  max-height: min(calc(100% - 24px), calc(100dvh - 170px));
   z-index: 6;
   display: flex;
   flex-direction: column;
