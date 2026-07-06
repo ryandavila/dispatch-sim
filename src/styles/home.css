@@ -1,0 +1,45 @@
+/* ==========================================================================
+   SDN.HOME — boot / front-desk screen (Home page)
+   A single paper window: in-fiction welcome, a few mono readouts, and the
+   three launchers into the rest of the app. Classes prefixed sh- (SDN Home).
+   ========================================================================== */
+
+.sh-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 12rem);
+}
+
+.sh-window {
+  width: min(640px, 100%);
+}
+
+.sh-welcome {
+  margin: 0 0 1rem;
+  font-size: 1.05rem;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+.sh-readouts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin: 0 0 1.2rem;
+  padding: 0.65rem 0.85rem;
+  background: var(--paper-shade);
+  border: 1px solid var(--paper-edge);
+  border-radius: var(--radius);
+}
+
+.sh-launchers {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.sh-launcher {
+  text-align: center;
+  text-decoration: none;
+}

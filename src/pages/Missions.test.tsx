@@ -47,7 +47,7 @@ describe('Missions - catalog browse', () => {
   it('is a read-only catalog that points deploys to a Shift', () => {
     renderMissions();
 
-    expect(screen.getByText('Mission Catalog')).toBeInTheDocument();
+    expect(screen.getByText('CALL.ARCHIVE')).toBeInTheDocument();
     // The browse note links to the Shift page as the place to deploy.
     expect(screen.getByRole('link', { name: 'Shift' })).toHaveAttribute('href', '/shift');
   });

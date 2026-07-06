@@ -1,56 +1,54 @@
 import { Link } from 'react-router-dom';
-import { loadAgents, loadMissions } from '../utils/dataLoader';
+import { isDowned } from '../engine/injury';
+import '../styles/home.css';
+import { useUserProgress } from '../hooks/useUserProgress';
+import { loadAgents } from '../utils/dataLoader';
 
+/**
+ * The SDN boot screen: the terminal's home base. A short in-fiction welcome
+ * plus a handful of live readouts, then three launchers into the rest of the
+ * app. Deploying heroes happens on a Shift — this is just the front desk.
+ */
 export function Home() {
   const agents = loadAgents();
-  const missions = loadMissions();
+  const { userProgress } = useUserProgress();
 
-  // Calculate stats
-  const totalAgents = agents.length;
-  const averageLevel = agents.reduce((sum, agent) => sum + agent.level, 0) / totalAgents;
-  const totalMissions = missions.length;
-
-  // Count agents that aren't excluded from any mission
-  const allExcludedAgents = new Set(missions.flatMap((mission) => mission.excludedAgents || []));
-  const availableAgents = agents.filter((agent) => !allExcludedAgents.has(agent.id)).length;
+  const heroesReady = agents.filter((agent) => !isDowned(agent)).length;
+  const shiftNumber = userProgress.shiftSummaries.length + 1;
 
   return (
-    <div className="home-page">
-      <div className="home-header">
-        <h2>Welcome to Dispatch</h2>
-        <p>Manage your team of reformed villains</p>
-      </div>
+    <div className="sh-page">
+      <div className="sh-window sdn-window">
+        <div className="sdn-window-title">SDN.HOME</div>
+        <div className="sdn-window-body">
+          <p className="sh-welcome">
+            Superhero Dispatch Network — <strong>Torrance Branch</strong>. Z-Team is on file and the
+            Phoenix Program keeps the lights on. Clock in to run a shift, or check the roster and
+            call archive first.
+          </p>
 
-      <div className="dashboard-stats">
-        <div className="stat-card">
-          <div className="stat-value">{totalAgents}</div>
-          <div className="stat-label">Total Agents</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-value">{averageLevel.toFixed(1)}</div>
-          <div className="stat-label">Average Level</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-value">{totalMissions}</div>
-          <div className="stat-label">Active Missions</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-value">{availableAgents}</div>
-          <div className="stat-label">Always Available</div>
+          <div className="sh-readouts sdn-readout">
+            <span>
+              » HEROES READY: {heroesReady}/{agents.length}
+            </span>
+            <span>» NEXT SHIFT: {shiftNumber}</span>
+            <span>» BANDAGES IN STOCK: {userProgress.medKits}</span>
+            <span>» BOOST CHARGES: {userProgress.pityRemaining}</span>
+          </div>
+
+          <nav className="sh-launchers">
+            <Link to="/shift" className="sdn-btn sdn-btn-primary sh-launcher">
+              Clock in
+            </Link>
+            <Link to="/roster" className="sdn-btn sh-launcher">
+              Hero database
+            </Link>
+            <Link to="/missions" className="sdn-btn sh-launcher">
+              Call archive
+            </Link>
+          </nav>
         </div>
       </div>
-
-      <nav className="home-nav">
-        <Link to="/shift" className="home-nav-button primary">
-          Start Shift
-        </Link>
-        <Link to="/roster" className="home-nav-button">
-          View Roster
-        </Link>
-        <Link to="/missions" className="home-nav-button">
-          Mission Catalog
-        </Link>
-      </nav>
     </div>
   );
 }

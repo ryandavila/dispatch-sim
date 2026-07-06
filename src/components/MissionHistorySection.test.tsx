@@ -149,7 +149,7 @@ describe('MissionHistorySection', () => {
       <MissionHistorySection userProgress={userProgress} allMissions={mockMissions} />
     );
 
-    const cards = container.querySelectorAll('.mission-card');
+    const cards = container.querySelectorAll('.ar-log-row');
     expect(cards[0]).toHaveTextContent('Recon Mission'); // More recent
     expect(cards[1]).toHaveTextContent('Rescue Mission'); // Older
   });
@@ -196,9 +196,12 @@ describe('MissionHistorySection', () => {
       <MissionHistorySection userProgress={userProgress} allMissions={mockMissions} />
     );
 
-    // Should not render a card for missing mission
-    const cards = container.querySelectorAll('.mission-card');
-    expect(cards).toHaveLength(0);
+    // A stale/unknown mission id still gets a card, with a fallback name
+    // instead of crashing or silently vanishing from history.
+    const cards = container.querySelectorAll('.ar-log-row');
+    expect(cards).toHaveLength(1);
+    expect(screen.getByText('Archived Call')).toBeInTheDocument();
+    expect(screen.getByText('+100 XP')).toBeInTheDocument();
   });
 
   it('should display correct agent count', () => {

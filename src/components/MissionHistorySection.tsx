@@ -9,7 +9,7 @@ interface MissionHistorySectionProps {
 export function MissionHistorySection({ userProgress, allMissions }: MissionHistorySectionProps) {
   if (userProgress.missionCompletions.length === 0) {
     return (
-      <div className="empty-state">
+      <div className="ar-empty-state">
         <p>No missions completed yet. Deploy agents on missions to build your history!</p>
       </div>
     );
@@ -35,26 +35,30 @@ export function MissionHistorySection({ userProgress, allMissions }: MissionHist
   };
 
   return (
-    <div className="missions-list">
+    <div className="ar-log">
       {sortedCompletions.map((completion, index) => {
+        // The mission catalog can change between plays (or entries), so a
+        // completion may point at an id that no longer exists — degrade to a
+        // placeholder row instead of silently dropping the history entry.
         const mission = getMissionById(completion.missionId);
-        if (!mission) return null;
+        const name = mission?.name ?? 'Archived Call';
+        const description = mission?.description ?? 'This call is no longer in the active catalog.';
 
         return (
-          <div key={`${completion.missionId}-${index}`} className="mission-card completed">
-            <div className="mission-card-header">
-              <h3>{mission.name}</h3>
+          <div key={`${completion.missionId}-${index}`} className="ar-log-row">
+            <div className="ar-log-row-header">
+              <h3 className="ar-log-name">{name}</h3>
               {/* Records saved before failure existed lack the flag; treat them as successes */}
               {completion.success === false ? (
-                <span className="history-failed">Failed</span>
+                <span className="ar-log-failed">Failed</span>
               ) : (
-                <span className="history-xp">+{completion.experienceGained} XP</span>
+                <span className="ar-log-xp">+{completion.experienceGained} XP</span>
               )}
             </div>
-            <p className="mission-description">{mission.description}</p>
-            <div className="mission-info">
-              <span className="history-date">{formatDate(completion.completedAt)}</span>
-              <span className="history-agents">{completion.agents.length} agents</span>
+            <p className="ar-log-description">{description}</p>
+            <div className="ar-log-meta sdn-readout">
+              <span>{formatDate(completion.completedAt)}</span>
+              <span>{completion.agents.length} agents</span>
             </div>
           </div>
         );

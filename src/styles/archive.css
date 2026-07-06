@@ -1,0 +1,331 @@
+/* ==========================================================================
+   CALL.ARCHIVE — the Missions (Archive) page: browse call types + history.
+   Local tab strip (reuses .sdn-tab visuals), paper call cards, terminal-log
+   style history rows. Classes prefixed ar-.
+   ========================================================================== */
+
+.ar-page {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.ar-xp {
+  color: var(--paper-bright);
+}
+
+.ar-note {
+  margin: 0 0 1rem;
+  color: var(--ink-soft);
+  font-size: 0.98rem;
+  line-height: 1.5;
+}
+
+.ar-inline-link {
+  color: var(--amber-deep);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.ar-inline-link:hover {
+  text-decoration: underline;
+}
+
+/* -- local tab strip ------------------------------------------------------- */
+
+.ar-tabs {
+  display: flex;
+  gap: 6px;
+}
+
+.ar-tab-panel {
+  background: var(--paper-bright);
+  border: var(--border-ink);
+  border-top: none;
+  border-radius: 0 0 var(--radius) var(--radius);
+  padding: 1rem;
+}
+
+/* -- filters ----------------------------------------------------------------- */
+
+.ar-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.ar-filter-label {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.ar-difficulty-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.ar-difficulty-filter {
+  cursor: pointer;
+}
+
+.ar-difficulty-filter.active {
+  background: var(--amber-bright);
+}
+
+/* -- call catalog cards ------------------------------------------------------ */
+
+.ar-call-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.ar-call-card {
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: var(--radius);
+  padding: 0.85rem 1rem;
+  cursor: pointer;
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.ar-call-card:hover {
+  border-color: var(--amber-deep);
+  transform: translateY(-2px);
+}
+
+.ar-call-card.selected {
+  border-color: var(--amber-deep);
+  box-shadow: 0 0 0 2px var(--amber);
+}
+
+.ar-call-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.6rem;
+  margin-bottom: 0.4rem;
+}
+
+.ar-call-name {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.08rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.ar-difficulty-chip {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.15rem 0.55rem;
+  border: 2px solid var(--ink);
+  border-radius: var(--radius);
+  color: var(--paper-bright);
+  white-space: nowrap;
+}
+
+.ar-call-loc {
+  margin-bottom: 0.35rem;
+  color: var(--ink-soft);
+}
+
+.ar-call-description {
+  margin: 0 0 0.6rem;
+  color: var(--ink-soft);
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.ar-call-info {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.4rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--paper-edge);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+}
+
+/* -- selected-call details panel --------------------------------------------- */
+
+.ar-details {
+  background: var(--paper-bright);
+  border: 2px solid var(--ink);
+  border-radius: var(--radius);
+  padding: 1.1rem;
+}
+
+.ar-details-header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin-bottom: 0.35rem;
+}
+
+.ar-details-name {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.3rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.ar-details-loc {
+  margin-bottom: 0.5rem;
+  color: var(--ink-soft);
+}
+
+.ar-details-description {
+  margin: 0 0 1rem;
+  color: var(--ink-soft);
+  line-height: 1.5;
+}
+
+.ar-details-chart {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.ar-details-reward {
+  text-align: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--amber-deep);
+}
+
+/* -- terminal-log style history rows (mission history + shift history) ------ */
+
+.ar-log {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.ar-log-row {
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-left: 4px solid var(--sdn-teal);
+  border-radius: var(--radius);
+  padding: 0.7rem 0.9rem;
+}
+
+.ar-log-row-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.6rem;
+}
+
+.ar-log-name {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.ar-log-xp {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--ok);
+  font-weight: 700;
+}
+
+.ar-log-failed {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--alert);
+  font-weight: 700;
+}
+
+.ar-log-lit {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: var(--amber-deep);
+}
+
+.ar-log-description {
+  margin: 0.3rem 0;
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+
+.ar-log-tally {
+  display: flex;
+  gap: 0.9rem;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 700;
+  margin: 0.3rem 0;
+}
+
+.ar-tally-ok {
+  color: var(--ok);
+}
+
+.ar-tally-fail {
+  color: var(--alert);
+}
+
+.ar-tally-miss {
+  color: var(--ink-faint);
+}
+
+.ar-log-rewards {
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  color: var(--amber-deep);
+  font-weight: 700;
+}
+
+.ar-log-recipient {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+  margin-top: 0.15rem;
+}
+
+.ar-log-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  margin-top: 0.35rem;
+  color: var(--ink-faint);
+}
+
+/* -- empty state --------------------------------------------------------------- */
+
+.ar-empty-state {
+  text-align: center;
+  padding: 2.5rem 1rem;
+  color: var(--ink-faint);
+}
+
+.ar-empty-state p {
+  margin: 0;
+  font-size: 1rem;
+}

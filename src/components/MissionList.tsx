@@ -9,12 +9,12 @@ interface MissionListProps {
 
 export function MissionList({ missions, selectedMission, onMissionSelect }: MissionListProps) {
   return (
-    <div className="missions-list">
+    <div className="ar-call-list">
       {missions.map((mission) => (
         // biome-ignore lint/a11y/useSemanticElements: Card component, not a semantic button
         <div
           key={mission.id}
-          className={`mission-card ${selectedMission?.id === mission.id ? 'selected' : ''}`}
+          className={`ar-call-card ${selectedMission?.id === mission.id ? 'selected' : ''}`}
           onClick={() => onMissionSelect(mission)}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
@@ -25,20 +25,23 @@ export function MissionList({ missions, selectedMission, onMissionSelect }: Miss
           role="button"
           tabIndex={0}
         >
-          <div className="mission-card-header">
-            <h3>{mission.name}</h3>
+          <div className="ar-call-card-header">
+            <h3 className="ar-call-name">{mission.name}</h3>
             <span
-              className="mission-difficulty"
-              style={{ color: getDifficultyColor(mission.difficulty) }}
+              className="ar-difficulty-chip"
+              style={{ backgroundColor: getDifficultyColor(mission.difficulty) }}
             >
               {mission.difficulty}
             </span>
           </div>
-          <p className="mission-description">{mission.description}</p>
-          <div className="mission-info">
-            <span className="mission-agents">Max Agents: {mission.maxAgents}</span>
+          {mission.location && (
+            <div className="ar-call-loc sdn-readout">LOC: {mission.location.name}</div>
+          )}
+          <p className="ar-call-description">{mission.description}</p>
+          <div className="ar-call-info">
+            <span className="ar-call-agents">Max Agents: {mission.maxAgents}</span>
             {mission.rewards && <span>XP: {mission.rewards.experience}</span>}
-            <span className="mission-time">
+            <span className="ar-call-time">
               Travel: {mission.travelTime} | Duration: {mission.missionDuration}
             </span>
           </div>
