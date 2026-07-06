@@ -17,15 +17,23 @@ export interface ShiftCall {
   /** Absolute ms (shift virtual clock) at which the call is scheduled to open. */
   spawnAt: number;
   /**
-   * Absolute ms at which an open call auto-fails. Baked as `spawnAt + callTimerMs`
-   * but re-stamped to `openedAt + callTimerMs` when the call actually opens, so a
-   * call held back by the concurrency cap still gets a full timer. Only meaningful
+   * Absolute ms at which an open call auto-fails. Baked as `spawnAt + timerMs`
+   * (falling back to `config.callTimerMs` when `timerMs` is absent) but
+   * re-stamped to `openedAt + timerMs` when the call actually opens, so a call
+   * held back by the concurrency cap still gets a full timer. Only meaningful
    * while `status === 'open'`.
    */
   expiresAt: number;
   status: CallStatus;
   /** Set once the call is assigned/deployed. */
   activeMissionId?: string;
+  /**
+   * This call's own countdown window (ms), baked from its mission's difficulty
+   * (see `callTimerMsForDifficulty` in engine/shiftLadder). Optional so shifts
+   * persisted before this field existed keep loading; every reader falls back
+   * to `config.callTimerMs` when absent.
+   */
+  timerMs?: number;
 }
 
 export interface ShiftConfig {

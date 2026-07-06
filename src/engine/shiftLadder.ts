@@ -37,6 +37,29 @@ export function configForShift(shiftNumber: number): ShiftConfig {
   };
 }
 
+/** Per-difficulty timer multiplier applied to a shift's base `callTimerMs`. */
+const TIMER_MULTIPLIER: Record<Mission['difficulty'], number> = {
+  Easy: 0.6,
+  Medium: 1.0,
+  Hard: 1.5,
+  Extreme: 1.9,
+};
+
+/**
+ * Derive a call's own countdown window from its mission difficulty and the
+ * shift's base `callTimerMs`. Easy calls resolve in a glance, so they get a
+ * short fuse for quick triage; Hard/Extreme calls are the ones a dispatcher
+ * has to actually think about, so they get more deliberation time — mirroring
+ * the real game's longer windows on its biggest calls. Medium is unscaled
+ * (the base timer as-is). Result is rounded to the nearest ms.
+ */
+export function callTimerMsForDifficulty(
+  difficulty: Mission['difficulty'],
+  baseMs: number
+): number {
+  return Math.round(baseMs * TIMER_MULTIPLIER[difficulty]);
+}
+
 /** Per-difficulty spawn weight for the `n`-th shift (see JSDoc below). */
 function weightForDifficulty(difficulty: Mission['difficulty'], n: number): number {
   switch (difficulty) {

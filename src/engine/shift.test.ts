@@ -111,6 +111,76 @@ describe('beginShift', () => {
       expect(n).toBeLessThanOrEqual(16);
     }
   });
+
+  describe('per-difficulty timers (callTimerFor)', () => {
+    // Maps each pool id to a distinct timer so we can tell them apart.
+    const TIMER_BY_MISSION: Record<string, number> = { m1: 10_000, m2: 20_000, m3: 30_000 };
+    const callTimerFor = (missionId: string) =>
+      TIMER_BY_MISSION[missionId] ?? DEFAULT_SHIFT_CONFIG.callTimerMs;
+
+    it('bakes each call timerMs from the resolver and derives expiresAt from it', () => {
+      const state = beginShift(DEFAULT_SHIFT_CONFIG, 0, createRng(42), POOL, callTimerFor);
+      expect(state.calls.length).toBeGreaterThan(0);
+      for (const call of state.calls) {
+        expect(call.timerMs).toBe(TIMER_BY_MISSION[call.missionId]);
+        expect(call.expiresAt).toBe(call.spawnAt + call.timerMs!);
+      }
+    });
+
+    it('does not change the rng stream / schedule shape versus omitting the resolver', () => {
+      const withResolver = beginShift(DEFAULT_SHIFT_CONFIG, 0, createRng(42), POOL, callTimerFor);
+      const without = beginShift(DEFAULT_SHIFT_CONFIG, 0, createRng(42), POOL);
+      // Same spawnAt/missionId schedule; only timerMs/expiresAt differ.
+      expect(
+        withResolver.calls.map((c) => ({ spawnAt: c.spawnAt, missionId: c.missionId }))
+      ).toEqual(without.calls.map((c) => ({ spawnAt: c.spawnAt, missionId: c.missionId })));
+    });
+
+    it('omitting the resolver preserves old behavior byte-for-byte (no timerMs field, config.callTimerMs used)', () => {
+      const state = beginShift(DEFAULT_SHIFT_CONFIG, 0, createRng(42), POOL);
+      for (const call of state.calls) {
+        expect(call.timerMs).toBeUndefined();
+        expect(call.expiresAt).toBe(call.spawnAt + DEFAULT_SHIFT_CONFIG.callTimerMs);
+      }
+    });
+
+    it('re-stamps a cap-delayed call with its own timerMs, not the shift default, when it opens', () => {
+      const config: ShiftConfig = { ...DEFAULT_SHIFT_CONFIG, maxOpenCalls: 1 };
+      const calls: ShiftCall[] = [
+        {
+          id: 'call-0',
+          missionId: 'm1',
+          spawnAt: 100,
+          expiresAt: 100 + 10_000,
+          status: 'pending',
+          timerMs: 10_000,
+        },
+        {
+          id: 'call-1',
+          missionId: 'm2',
+          spawnAt: 200,
+          expiresAt: 200 + 20_000,
+          status: 'pending',
+          timerMs: 20_000,
+        },
+      ];
+      const state = stateWith(calls, { config });
+
+      // Both due, but cap holds call-1 back.
+      const { state: s1 } = advanceShift(state, 300, createRng(1));
+      expect(s1.calls[0].status).toBe('open');
+      expect(s1.calls[0].expiresAt).toBe(300 + 10_000); // re-stamped with its own timerMs
+      expect(s1.calls[1].status).toBe('pending');
+
+      // Free the slot; call-1 opens later and gets its own (longer) timer from
+      // the moment it actually opens, not the shift default.
+      const { state: s2 } = advanceShift(s1, s1.calls[0].expiresAt, createRng(1));
+      expect(s2.calls[0].status).toBe('missed');
+      const { state: s3 } = advanceShift(s2, s2.lastTickMs + 1, createRng(1));
+      expect(s3.calls[1].status).toBe('open');
+      expect(s3.calls[1].expiresAt).toBe(s3.lastTickMs + 20_000);
+    });
+  });
 });
 
 describe('advanceShift — spawning', () => {

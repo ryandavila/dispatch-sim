@@ -14,6 +14,7 @@ import {
   pauseShift,
   resumeShift,
 } from '../engine/shift';
+import { callTimerMsForDifficulty } from '../engine/shiftLadder';
 import { getTeamSynergies, synergyPairKey } from '../engine/synergy';
 import type { ActiveMission } from '../types/activeMission';
 import type { Character } from '../types/character';
@@ -253,7 +254,13 @@ export function useShift(options: UseShiftOptions) {
       pauseStartWallRef.current = null;
       const cfg = config ?? opts.config ?? DEFAULT_SHIFT_CONFIG;
       const pool = opts.buildPool ? opts.buildPool(opts.missions) : opts.missions.map((m) => m.id);
-      applyState(beginShift(cfg, clock(), rng, pool));
+      const callTimerFor = (missionId: string) => {
+        const mission = opts.missions.find((m) => m.id === missionId);
+        return mission
+          ? callTimerMsForDifficulty(mission.difficulty, cfg.callTimerMs)
+          : cfg.callTimerMs;
+      };
+      applyState(beginShift(cfg, clock(), rng, pool, callTimerFor));
     },
     [applyState]
   );

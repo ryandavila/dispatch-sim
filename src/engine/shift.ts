@@ -39,12 +39,20 @@ export const DEFAULT_SHIFT_CONFIG: ShiftConfig = {
  * running state. Each call gets a jittered `spawnAt` and a missionId drawn
  * from `missionPool`; the rng stream is consumed identically regardless of
  * pool contents so replay stays stable.
+ *
+ * `callTimerFor`, when provided, resolves a baked call's missionId to its own
+ * countdown window (`timerMs`), baking `expiresAt = spawnAt + timerMs`
+ * accordingly. It is a pure lookup (e.g. by mission difficulty) — it never
+ * draws from `rng`, so the rng stream/schedule shape is unaffected by whether
+ * it's supplied. Omitting it preserves the old behavior byte-for-byte: every
+ * call falls back to the shift-wide `config.callTimerMs`.
  */
 export function beginShift(
   config: ShiftConfig,
   startMs: number,
   rng: Rng,
-  missionPool: string[]
+  missionPool: string[],
+  callTimerFor?: (missionId: string) => number
 ): ShiftState {
   const calls: ShiftCall[] = [];
   const cutoff = startMs + config.shiftDurationMs;
@@ -62,12 +70,14 @@ export function beginShift(
     }
     const missionId =
       missionPool.length > 0 ? missionPool[Math.floor(pick * missionPool.length)] : '';
+    const timerMs = callTimerFor?.(missionId);
     calls.push({
       id: `call-${index}`,
       missionId,
       spawnAt,
-      expiresAt: spawnAt + config.callTimerMs,
+      expiresAt: spawnAt + (timerMs ?? config.callTimerMs),
       status: 'pending',
+      ...(timerMs !== undefined ? { timerMs } : {}),
     });
     index++;
   }
@@ -186,7 +196,9 @@ function spawnDueCalls(
     }
     call.status = 'open';
     // Timer starts when the call becomes visible, so cap-delayed calls are fair.
-    call.expiresAt = nowMs + config.callTimerMs;
+    // Uses the call's own baked timer (per-difficulty) when present, else the
+    // shift-wide default.
+    call.expiresAt = nowMs + (call.timerMs ?? config.callTimerMs);
     events.push({ type: 'call-spawned', callId: call.id });
     openCount++;
   }

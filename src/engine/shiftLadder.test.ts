@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Mission } from '../types/mission';
 import { DEFAULT_SHIFT_CONFIG } from './shift';
-import { configForShift, missionPoolForShift } from './shiftLadder';
+import { callTimerMsForDifficulty, configForShift, missionPoolForShift } from './shiftLadder';
 
 describe('configForShift', () => {
   it('shift 1 equals the documented base config', () => {
@@ -134,5 +134,30 @@ describe('missionPoolForShift', () => {
   it('clamps shiftNumber to a whole number ≥ 1', () => {
     expect(missionPoolForShift(0, missions)).toEqual(missionPoolForShift(1, missions));
     expect(missionPoolForShift(-2, missions)).toEqual(missionPoolForShift(1, missions));
+  });
+});
+
+describe('callTimerMsForDifficulty', () => {
+  it('applies the documented multiplier table, rounded', () => {
+    expect(callTimerMsForDifficulty('Easy', 25_000)).toBe(15_000); // ×0.6
+    expect(callTimerMsForDifficulty('Medium', 25_000)).toBe(25_000); // ×1.0
+    expect(callTimerMsForDifficulty('Hard', 25_000)).toBe(37_500); // ×1.5
+    expect(callTimerMsForDifficulty('Extreme', 25_000)).toBe(47_500); // ×1.9
+  });
+
+  it('rounds to the nearest ms', () => {
+    // 19000 * 0.6 = 11400 (exact); use a base that forces rounding.
+    expect(callTimerMsForDifficulty('Extreme', 12_345)).toBe(Math.round(12_345 * 1.9));
+  });
+
+  it('orders Easy < Medium < Hard < Extreme for any positive base', () => {
+    const base = 20_000;
+    const easy = callTimerMsForDifficulty('Easy', base);
+    const medium = callTimerMsForDifficulty('Medium', base);
+    const hard = callTimerMsForDifficulty('Hard', base);
+    const extreme = callTimerMsForDifficulty('Extreme', base);
+    expect(easy).toBeLessThan(medium);
+    expect(medium).toBeLessThan(hard);
+    expect(hard).toBeLessThan(extreme);
   });
 });

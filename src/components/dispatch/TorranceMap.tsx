@@ -67,7 +67,9 @@ export function TorranceMap({
       {openCalls.map(({ call, mission }) => {
         const { x, y } = positionFor(mission, call.id);
         const remaining = Math.max(0, call.expiresAt - now);
-        const fraction = Math.min(1, remaining / callTimerMs);
+        // Per-difficulty timers: each call carries its own window; the shift-wide
+        // config value is only the fallback for pre-timerMs saves.
+        const fraction = Math.min(1, remaining / (call.timerMs ?? callTimerMs));
         const urgent = fraction < 0.3;
         return (
           <button
