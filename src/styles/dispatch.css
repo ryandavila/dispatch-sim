@@ -12,6 +12,16 @@
 
 /* -- board window ---------------------------------------------------------- */
 
+.dm-board {
+  /* Size the board from available viewport height so the whole shift column
+     (app chrome + board + roster rail + footer) fits 100dvh with no page
+     scroll. 334px = measured non-map vertical chrome at desktop widths; the
+     +4px covers the board border. When height is plentiful the min() falls
+     back to full width, so tall and narrow viewports are unaffected. */
+  width: min(100%, calc((100dvh - 334px) * (1000 / 620) + 4px));
+  margin-inline: auto;
+}
+
 .dm-board .sdn-window-title {
   gap: 0.9rem;
 }
@@ -625,7 +635,7 @@
 .dm-roster {
   display: flex;
   gap: 0.6rem;
-  padding: 0.7rem 0.8rem 0.55rem;
+  padding: 0.5rem 0.8rem 0.45rem;
   background: rgba(3, 10, 9, 0.65);
   border: 2px solid rgba(69, 169, 158, 0.25);
   border-radius: var(--radius);
@@ -653,7 +663,7 @@
 .dm-hero {
   position: relative;
   flex: 0 0 auto;
-  width: 92px;
+  width: 80px;
   border: 2px solid var(--ink);
   border-radius: var(--radius);
   background: linear-gradient(to bottom, #35948b, #2a7a72);
