@@ -127,6 +127,37 @@
       "name": "Torrance Beach",
       "x": 18,
       "y": 78
+    },
+    "disruption": {
+      "prompt": "A rusted-out drum buried in the junk just tipped over and it's leaking something that definitely isn't seawater — the tide's carrying it toward the swimmers' section.",
+      "options": [
+        {
+          "id": "beach-haul",
+          "label": "Haul the drum out by hand before it spreads",
+          "stat": "Vigor",
+          "threshold": 4,
+          "xpBonus": 20,
+          "passText": "Muscled the drum up the sand and capped it before more than a puddle got out.",
+          "failText": "Drum slipped and cracked wider — now it's a bigger cleanup and a grosser one."
+        },
+        {
+          "id": "beach-cordon",
+          "label": "Sprint the cordon tape around the spill radius",
+          "stat": "Mobility",
+          "threshold": 3,
+          "xpBonus": 20,
+          "passText": "Tape's up and the swimmers are rerouted before anyone gets near it.",
+          "failText": "Tape goes up too slow — a jogger already walked right through the runoff."
+        },
+        {
+          "id": "beach-golem",
+          "label": "Just pick the whole drum up and walk it to the truck",
+          "heroId": "golem",
+          "xpBonus": 30,
+          "passText": "Golem hoists the drum onto one shoulder like it's a beach ball and the problem's just gone.",
+          "failText": "Not applicable — Golem doesn't miss this one."
+        }
+      ]
     }
   },
   {
@@ -209,6 +240,37 @@
       "name": "Del la Monice",
       "x": 58,
       "y": 56
+    },
+    "disruption": {
+      "prompt": "The control panel just threw an error code you've never seen and the pressure gauge is climbing past the red line — you've got maybe ten seconds before the pipe fitting blows.",
+      "options": [
+        {
+          "id": "bidet-override",
+          "label": "Work out the manual override sequence",
+          "stat": "Intellect",
+          "threshold": 5,
+          "xpBonus": 25,
+          "passText": "Traced the logic board, hit the override in the right order, and the geyser drops to a trickle.",
+          "failText": "Guessed wrong on the sequence — the panel sparks and the geyser doubles down."
+        },
+        {
+          "id": "bidet-brace",
+          "label": "Brace the fitting and ride out the surge",
+          "stat": "Vigor",
+          "threshold": 4,
+          "xpBonus": 25,
+          "passText": "Held the fitting together through the surge until the pressure bled off on its own.",
+          "failText": "Surge wins — soaked to the bone and the fitting pops anyway."
+        },
+        {
+          "id": "bidet-sonar",
+          "label": "Read both possible failure states at once",
+          "heroId": "sonar",
+          "xpBonus": 40,
+          "passText": "Sonar's two minds race through every branch of the error code simultaneously and call the exact fix before the gauge finishes climbing.",
+          "failText": "Not applicable — Sonar doesn't miss this one."
+        }
+      ]
     }
   },
   {
@@ -283,6 +345,37 @@
       "name": "Torrance City Hall",
       "x": 52,
       "y": 38
+    },
+    "disruption": {
+      "prompt": "The judges just walked out mid-act after the third contestant's 'juggling' act put a chair through the backdrop — the crowd's booing and the whole show is one heckle from collapsing.",
+      "options": [
+        {
+          "id": "talent-charm",
+          "label": "Coax the judges back to their seats",
+          "stat": "Charisma",
+          "threshold": 5,
+          "xpBonus": 28,
+          "passText": "A little flattery and a promise of better acts gets the judges back before intermission ends.",
+          "failText": "Judges won't budge — you finish the night one chair short of a full panel."
+        },
+        {
+          "id": "talent-reshuffle",
+          "label": "Re-shuffle the lineup on the fly",
+          "stat": "Intellect",
+          "threshold": 4,
+          "xpBonus": 28,
+          "passText": "Swap the running order, front-load the strong acts, and the crowd never notices the gap.",
+          "failText": "Reshuffle backfires — the next act is somehow worse and the booing gets louder."
+        },
+        {
+          "id": "talent-malevola",
+          "label": "Calm the whole room down at once",
+          "heroId": "malevola",
+          "xpBonus": 42,
+          "passText": "Malevola works the crowd like a room full of old friends, and by the time she's done even the judges are smiling again.",
+          "failText": "Not applicable — Malevola doesn't miss this one."
+        }
+      ]
     }
   },
   {
@@ -460,6 +553,37 @@
       "name": "Madrona Marsh",
       "x": 12,
       "y": 30
+    },
+    "disruption": {
+      "prompt": "Someone just swung a real steel blade instead of a foam one and the whole LARP camp scattered into the mud — this stopped being a game two seconds ago.",
+      "options": [
+        {
+          "id": "larp-disarm",
+          "label": "Wade in and disarm the guy with the real blade",
+          "stat": "Combat",
+          "threshold": 6,
+          "xpBonus": 40,
+          "passText": "Get inside his swing, twist the blade loose, and the panic drains out of the crowd instantly.",
+          "failText": "He gets a shallow cut in before you wrestle the blade away — messy, but it's down."
+        },
+        {
+          "id": "larp-hold",
+          "label": "Plant yourself between him and the fleeing crowd",
+          "stat": "Vigor",
+          "threshold": 5,
+          "xpBonus": 40,
+          "passText": "Take the ground and don't give an inch — he tires himself out swinging at nothing.",
+          "failText": "He breaks past you into the mud after the crowd — chaos for another few minutes."
+        },
+        {
+          "id": "larp-punchup",
+          "label": "Let him land one so he thinks he's winning",
+          "heroId": "punch-up",
+          "xpBonus": 60,
+          "passText": "Punch Up shrugs off the hit, grins wider, and the guy drops the blade the second he realizes it did nothing.",
+          "failText": "Not applicable — Punch Up doesn't miss this one."
+        }
+      ]
     }
   },
   {
@@ -542,6 +666,37 @@
       "name": "Torrance Rail Yard",
       "x": 88,
       "y": 58
+    },
+    "disruption": {
+      "prompt": "The failsafe just rerouted onto a second track with a maintenance crew on it — you've got one shot to either stop the train or clear the crew before the junction switch locks.",
+      "options": [
+        {
+          "id": "train-sprint",
+          "label": "Outrun it down the platform to the manual brake",
+          "stat": "Mobility",
+          "threshold": 8,
+          "xpBonus": 65,
+          "passText": "Beat the train to the lever by half a car length and haul the brake before the junction.",
+          "failText": "Train wins the race — brake gets thrown a beat late and it clips the platform edge."
+        },
+        {
+          "id": "train-reroute",
+          "label": "Rewire the junction switch from the signal box",
+          "stat": "Intellect",
+          "threshold": 7,
+          "xpBonus": 65,
+          "passText": "Cross the wires in the right order and the switch throws the train back onto the clear track.",
+          "failText": "Wired it backwards — the switch jams half-open and the train grinds through it anyway."
+        },
+        {
+          "id": "train-coupe",
+          "label": "Fly ahead and physically block the switch",
+          "heroId": "coupe",
+          "xpBonus": 100,
+          "passText": "Coupé's already at the junction before the train's engineer even sees the crew, switch pinned open by hand.",
+          "failText": "Not applicable — Coupé doesn't miss this one."
+        }
+      ]
     }
   },
   {
@@ -567,6 +722,37 @@
       "name": "Comic Pug",
       "x": 45,
       "y": 51
+    },
+    "disruption": {
+      "prompt": "One of the crew just panicked and dragged two hostages toward the vault door — if it seals with them inside, nobody's getting them out clean.",
+      "options": [
+        {
+          "id": "bank-storm",
+          "label": "Storm the vault door before it seals",
+          "stat": "Combat",
+          "threshold": 7,
+          "xpBonus": 70,
+          "passText": "Wedge through the closing door and pin the panicking crewman before he can trigger the lock.",
+          "failText": "Door seals half a second too soon — you're on the wrong side of it now too."
+        },
+        {
+          "id": "bank-talkdown",
+          "label": "Talk him down before he reaches the door",
+          "stat": "Charisma",
+          "threshold": 7,
+          "xpBonus": 70,
+          "passText": "Get him looking at you instead of the vault and he lets both hostages go without a fight.",
+          "failText": "He's too far gone to listen — drags one hostage through before you reach them."
+        },
+        {
+          "id": "bank-invisigal",
+          "label": "Slip in unseen and pull the hostages out first",
+          "heroId": "invisigal",
+          "xpBonus": 105,
+          "passText": "Invisigal's already inside and gone again before the crewman even registers the door opened, hostages clear.",
+          "failText": "Not applicable — Invisigal doesn't miss this one."
+        }
+      ]
     }
   }
 ]

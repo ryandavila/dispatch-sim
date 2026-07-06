@@ -233,6 +233,94 @@ describe('validateMissions — disruption blocks', () => {
       expect(mission.disruption?.options.length).toBeGreaterThan(0);
     }
   });
+
+  it('gives every mission in the real catalog an authored disruption block', () => {
+    const missions = loadMissions();
+    for (const mission of missions) {
+      expect(
+        mission.disruption,
+        `mission "${mission.id}" is missing a disruption block`
+      ).toBeDefined();
+    }
+  });
+
+  it('gives every real disruption block 2 or 3 options', () => {
+    const missions = loadMissions();
+    for (const mission of missions) {
+      const count = mission.disruption?.options.length ?? 0;
+      expect(
+        count,
+        `mission "${mission.id}" has ${count} disruption options`
+      ).toBeGreaterThanOrEqual(2);
+      expect(count, `mission "${mission.id}" has ${count} disruption options`).toBeLessThanOrEqual(
+        3
+      );
+    }
+  });
+
+  it('keeps every real stat-gated threshold within the 1..10 sum-cap range', () => {
+    const missions = loadMissions();
+    for (const mission of missions) {
+      for (const option of mission.disruption?.options ?? []) {
+        if (option.threshold === undefined) continue;
+        expect(
+          option.threshold,
+          `mission "${mission.id}" option "${option.id}" threshold out of range`
+        ).toBeGreaterThanOrEqual(1);
+        expect(
+          option.threshold,
+          `mission "${mission.id}" option "${option.id}" threshold out of range`
+        ).toBeLessThanOrEqual(10);
+      }
+    }
+  });
+
+  it('keeps every real xpBonus positive and sane relative to the mission XP reward', () => {
+    const missions = loadMissions();
+    for (const mission of missions) {
+      const missionXp = mission.rewards?.experience ?? 0;
+      for (const option of mission.disruption?.options ?? []) {
+        expect(
+          option.xpBonus,
+          `mission "${mission.id}" option "${option.id}" xpBonus must be positive`
+        ).toBeGreaterThan(0);
+        // Disruption bonuses are a flavoring reward on top of the mission's
+        // own XP, not a replacement for it — hero-specific options run up to
+        // ~1.5x a stat option's bonus, so cap generously above that.
+        expect(
+          option.xpBonus,
+          `mission "${mission.id}" option "${option.id}" xpBonus is too large relative to mission XP (${missionXp})`
+        ).toBeLessThanOrEqual(missionXp);
+      }
+    }
+  });
+
+  it('only references valid hero ids in real disruption options', () => {
+    const missions = loadMissions();
+    const agentIds = new Set(loadAgents().map((agent) => agent.id));
+    for (const mission of missions) {
+      for (const option of mission.disruption?.options ?? []) {
+        if (option.heroId === undefined) continue;
+        expect(
+          agentIds.has(option.heroId),
+          `mission "${mission.id}" option "${option.id}" references unknown hero "${option.heroId}"`
+        ).toBe(true);
+      }
+    }
+  });
+
+  it('spreads hero moments across a good chunk of the roster, not just one or two heroes', () => {
+    const missions = loadMissions();
+    const heroIds = new Set<string>();
+    for (const mission of missions) {
+      for (const option of mission.disruption?.options ?? []) {
+        if (option.heroId !== undefined) heroIds.add(option.heroId);
+      }
+    }
+    // 10 heroes on the roster — require most of them to have at least one
+    // hero-specific disruption moment somewhere in the 14-mission catalog.
+    expect(heroIds.size).toBeGreaterThanOrEqual(7);
+  });
 });
 
 describe('validateSynergies', () => {
