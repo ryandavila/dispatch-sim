@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
+import { WipeTerminal } from '../components/WipeTerminal';
 import { isDowned } from '../engine/injury';
 import '../styles/home.css';
+import { useAgentProgress } from '../hooks/useAgentProgress';
 import { useUserProgress } from '../hooks/useUserProgress';
 import { loadAgents } from '../utils/dataLoader';
 
@@ -11,7 +13,8 @@ import { loadAgents } from '../utils/dataLoader';
  */
 export function Home() {
   const agents = loadAgents();
-  const { userProgress } = useUserProgress();
+  const { userProgress, resetProgress } = useUserProgress();
+  const { resetAgentProgress } = useAgentProgress();
 
   const heroesReady = agents.filter((agent) => !isDowned(agent)).length;
   const shiftNumber = userProgress.shiftSummaries.length + 1;
@@ -47,6 +50,10 @@ export function Home() {
               Call archive
             </Link>
           </nav>
+
+          <div className="sh-wipe-zone">
+            <WipeTerminal resetProgress={resetProgress} resetAgentProgress={resetAgentProgress} />
+          </div>
         </div>
       </div>
     </div>
