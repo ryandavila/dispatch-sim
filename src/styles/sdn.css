@@ -1,0 +1,425 @@
+/* ==========================================================================
+   SDN OS — design tokens + application chrome
+   The whole app is diegetic: the in-fiction Superhero Dispatch Network
+   terminal. Dark teal circuit-board screen, cream "paper" windows with
+   filename-style title bars, amber active states, condensed industrial type.
+   Reference: assets/character-card-with-ui.avif (real game screenshot).
+   ========================================================================== */
+
+:root {
+  /* -- palette ---------------------------------------------------------- */
+  --sdn-void: #051110; /* outside the CRT glass */
+  --sdn-bg: #0b1f1e; /* screen base */
+  --sdn-bg-raised: #0f2b29;
+  --sdn-teal-deep: #123a37; /* recessed panels on dark */
+  --sdn-teal: #2c8078; /* SDN interface teal */
+  --sdn-teal-bright: #45a99e;
+  --sdn-header: #0e2c2e; /* window title bars */
+  --sdn-text: #9fd8d0; /* readout text on dark */
+  --sdn-text-dim: #5e8f89;
+
+  --paper: #ece4d1; /* cream window panels */
+  --paper-bright: #f4eddc;
+  --paper-shade: #ddd2b6;
+  --paper-edge: #b9ac8a;
+  --ink: #17181a; /* text + borders on paper */
+  --ink-soft: #4a463c;
+  --ink-faint: #8c8471;
+
+  --amber: #dd9a2b; /* selection / active / primary */
+  --amber-bright: #f2b843;
+  --amber-deep: #a86f14;
+  --khaki: #d8c88f; /* secondary actions */
+  --khaki-deep: #b3a165;
+
+  --alert: #d64533; /* failure / injury / urgency */
+  --alert-bright: #f2664f;
+  --alert-deep: #7e2418;
+  --ok: #3f9d5a; /* success */
+  --ok-bright: #5fc47d;
+
+  /* -- type (Rajdhani + Orbitron: the game's confirmed UI faces) --------- */
+  --font-display: "Rajdhani", "Arial Narrow", sans-serif;
+  --font-body: "Rajdhani", "Helvetica Neue", sans-serif;
+  --font-title: "Orbitron", "Rajdhani", sans-serif;
+  --font-mono: "IBM Plex Mono", "Menlo", monospace;
+
+  /* -- shape ------------------------------------------------------------ */
+  --radius: 3px;
+  --border-ink: 2px solid var(--ink);
+  --shadow-window: 0 10px 30px rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+/* ==========================================================================
+   Screen + circuit-board backdrop
+   ========================================================================== */
+
+.sdn {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--sdn-void);
+  color: var(--sdn-text);
+  font-family: var(--font-body);
+  position: relative;
+}
+
+.sdn-screen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background:
+/* faint phosphor glow pooling top-centre */
+    radial-gradient(120% 90% at 50% 0%, rgba(69, 169, 158, 0.1) 0%, transparent 55%),
+    /* circuit traces */
+    repeating-linear-gradient(0deg, rgba(69, 169, 158, 0.05) 0 1px, transparent 1px 56px),
+    repeating-linear-gradient(90deg, rgba(69, 169, 158, 0.05) 0 1px, transparent 1px 56px),
+    /* solder pads at trace crossings */
+    radial-gradient(rgba(69, 169, 158, 0.14) 1.2px, transparent 1.6px),
+    linear-gradient(160deg, #0d2423 0%, var(--sdn-bg) 45%, #081817 100%);
+  background-size:
+    auto,
+    auto,
+    auto,
+    56px 56px,
+    auto;
+  box-shadow: inset 0 0 140px rgba(0, 0, 0, 0.75); /* CRT vignette */
+}
+
+/* scanlines + glass, above everything but untouchable */
+.sdn::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  background:
+    repeating-linear-gradient(0deg, rgba(4, 12, 11, 0.14) 0 1px, transparent 1px 3px),
+    radial-gradient(130% 130% at 50% 50%, transparent 60%, rgba(0, 0, 0, 0.38) 100%);
+  mix-blend-mode: multiply;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .sdn-screen {
+    animation: sdn-power-on 0.6s ease-out;
+  }
+  @keyframes sdn-power-on {
+    0% {
+      filter: brightness(2.4) saturate(0.2);
+      transform: scaleY(0.72);
+    }
+    45% {
+      filter: brightness(0.85) saturate(1);
+      transform: scaleY(1);
+    }
+    100% {
+      filter: none;
+    }
+  }
+}
+
+/* ==========================================================================
+   Top status bar
+   ========================================================================== */
+
+.sdn-topbar {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 0.35rem 1.1rem;
+  background: rgba(3, 10, 9, 0.82);
+  border-bottom: 1px solid rgba(69, 169, 158, 0.28);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  color: var(--sdn-text-dim);
+  white-space: nowrap;
+}
+
+.sdn-logo {
+  font-family: var(--font-title);
+  font-style: italic;
+  font-weight: 900;
+  font-size: 1.25rem;
+  letter-spacing: 0.06em;
+  color: var(--sdn-text);
+  text-decoration: none;
+  text-shadow: 0 0 12px rgba(69, 169, 158, 0.55);
+  transform: skewX(-4deg);
+}
+
+.sdn-logo:hover {
+  color: var(--amber-bright);
+  text-shadow: 0 0 12px rgba(242, 184, 67, 0.55);
+}
+
+.sdn-topbar-telemetry {
+  display: flex;
+  gap: 1.25rem;
+  overflow: hidden;
+}
+
+.sdn-topbar-telemetry span::before {
+  content: "|";
+  margin-right: 1.25rem;
+  opacity: 0.4;
+}
+
+.sdn-topbar-telemetry span:first-child::before {
+  content: none;
+}
+
+.sdn-topbar-fill {
+  flex: 1;
+  overflow: hidden;
+  opacity: 0.35;
+  user-select: none;
+}
+
+.sdn-topbar-build {
+  color: var(--sdn-text);
+}
+
+/* ==========================================================================
+   Nav tabs (game-style: star chip, amber when active)
+   ========================================================================== */
+
+.sdn-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 0.6rem 1.1rem 0;
+}
+
+.sdn-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.42rem 1.5rem 0.38rem;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.02rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--sdn-text);
+  background: linear-gradient(to bottom, #1d6a64, #175750);
+  border: 2px solid #0c2b28;
+  border-bottom-color: transparent;
+  border-radius: var(--radius) var(--radius) 0 0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  transition: filter 0.12s ease;
+}
+
+.sdn-tab:hover {
+  filter: brightness(1.15);
+}
+
+.sdn-tab.active {
+  background: linear-gradient(to bottom, var(--amber-bright), var(--amber));
+  color: var(--ink);
+  border-color: var(--ink);
+  border-bottom-color: transparent;
+  text-shadow: none;
+}
+
+.sdn-tab-star {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.05em;
+  height: 1.05em;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 0.62em;
+  line-height: 1;
+}
+
+.sdn-main {
+  flex: 1;
+  padding: 1.1rem 1.1rem 1.4rem;
+  max-width: 1500px;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+/* ==========================================================================
+   Bottom status bar
+   ========================================================================== */
+
+.sdn-bottombar {
+  display: flex;
+  justify-content: center;
+  gap: 1.4rem;
+  padding: 0.3rem 1.1rem;
+  background: rgba(3, 10, 9, 0.82);
+  border-top: 1px solid rgba(69, 169, 158, 0.28);
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.04em;
+  color: var(--sdn-text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.sdn-bottombar em {
+  font-style: normal;
+  color: var(--sdn-text);
+}
+
+/* ==========================================================================
+   Shared primitives — paper windows, buttons, chips
+   ========================================================================== */
+
+.sdn-window {
+  background: var(--paper);
+  border: var(--border-ink);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-window);
+  color: var(--ink);
+  overflow: hidden;
+}
+
+.sdn-window-title {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.32rem 0.7rem;
+  background: linear-gradient(to bottom, #133c3e, var(--sdn-header));
+  border-bottom: var(--border-ink);
+  color: var(--paper-bright);
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.sdn-window-title::before {
+  content: "";
+  width: 0.62em;
+  height: 0.62em;
+  background: var(--amber);
+  clip-path: polygon(50% 0%, 100% 38%, 81% 100%, 19% 100%, 0% 38%);
+}
+
+.sdn-window-title-spacer {
+  flex: 1;
+}
+
+.sdn-window-body {
+  padding: 1rem;
+}
+
+/* buttons ---------------------------------------------------------------- */
+
+.sdn-btn {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: linear-gradient(to bottom, var(--khaki), #c9b878);
+  border: 2px solid var(--ink);
+  border-radius: var(--radius);
+  padding: 0.45rem 1.4rem;
+  cursor: pointer;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    0 2px 0 rgba(0, 0, 0, 0.35);
+  transition:
+    filter 0.1s ease,
+    transform 0.05s ease,
+    box-shadow 0.05s ease;
+}
+
+.sdn-btn:hover:not(:disabled) {
+  filter: brightness(1.07);
+}
+
+.sdn-btn:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    0 0 0 rgba(0, 0, 0, 0.35);
+}
+
+.sdn-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.sdn-btn-primary {
+  background: linear-gradient(to bottom, var(--amber-bright), var(--amber));
+}
+
+.sdn-btn-danger {
+  background: linear-gradient(to bottom, var(--alert-bright), var(--alert));
+  color: var(--paper-bright);
+}
+
+.sdn-btn-ghost {
+  background: transparent;
+  color: var(--sdn-text);
+  border-color: var(--sdn-teal);
+  box-shadow: none;
+}
+
+/* tag chips (e.g. SHADOW / ASSASSIN) -------------------------------------- */
+
+.sdn-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.22rem 0.75rem;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.88rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: var(--paper-bright);
+  border: 2px solid var(--ink);
+  border-radius: var(--radius);
+}
+
+/* small mono readouts on paper -------------------------------------------- */
+
+.sdn-readout {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.03em;
+  color: var(--ink-soft);
+}
+
+/* ==========================================================================
+   Scrollbars + selection
+   ========================================================================== */
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--sdn-teal) rgba(3, 10, 9, 0.6);
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: rgba(3, 10, 9, 0.6);
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--sdn-teal);
+  border: 2px solid rgba(3, 10, 9, 0.6);
+  border-radius: 5px;
+}
+
+::selection {
+  background: var(--amber);
+  color: var(--ink);
+}
