@@ -319,4 +319,54 @@ describe('useShift — persistence (freeze & resume)', () => {
     const { result } = mount(() => wall.value, 'unused-key');
     expect(result.current.shift.phase).toBe('idle');
   });
+
+  it('discards a malformed persisted blob instead of freezing the board', () => {
+    // `{}` is valid JSON but no ShiftState: without the shape guard it would
+    // pass the `phase !== 'idle'` resume check and match no reducer branch.
+    localStorage.setItem(STORAGE_KEY, '{}');
+    const wall = { value: 0 };
+    const { result } = mount(() => wall.value);
+    expect(result.current.shift.phase).toBe('idle');
+  });
+
+  it('resumes a pre-timerMs/pre-disruption save (old shape) without NaN math', () => {
+    // A mid-shift save from before per-difficulty timers and disruptions:
+    // calls lack `timerMs`, active missions lack `disruption`.
+    const oldShape = {
+      phase: 'running',
+      config: CONFIG,
+      shiftStartMs: 0,
+      calls: [
+        {
+          id: 'call-0',
+          missionId: MISSION.id,
+          spawnAt: 1_000,
+          expiresAt: 1_000 + CONFIG.callTimerMs,
+          status: 'pending',
+        },
+      ],
+      activeMissions: [],
+      tally: { succeeded: 0, failed: 0, missed: 0 },
+      lastTickMs: 500,
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(oldShape));
+
+    const wall = { value: 500 };
+    const { result } = mount(() => wall.value);
+    expect(result.current.shift.phase).toBe('running');
+
+    // The call opens and expires on the config fallback timer — finite times.
+    act(() => {
+      wall.value = 1_000;
+      vi.advanceTimersByTime(100);
+    });
+    expect(result.current.shift.calls[0].status).toBe('open');
+    expect(Number.isFinite(result.current.shift.calls[0].expiresAt)).toBe(true);
+
+    act(() => {
+      wall.value = 1_000 + CONFIG.callTimerMs;
+      vi.advanceTimersByTime(100);
+    });
+    expect(result.current.shift.calls[0].status).toBe('missed');
+  });
 });

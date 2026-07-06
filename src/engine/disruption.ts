@@ -4,6 +4,13 @@
 // No React, no timers, no global state — randomness enters solely through the
 // injectable `Rng`, and the only "clock" this module ever sees is the
 // `activeStartMs`/`activeEndMs` window the caller passes in.
+//
+// Replay caveat: bakeDisruption draws 2 rng values when the mission has
+// authored `disruption` data and 0 when it doesn't, so the engine's
+// same-seed replay contract additionally assumes the SAME missions.json
+// authoring. Editing a mission's disruption block shifts every later draw
+// in a recorded shift's stream — acceptable for this game (replays don't
+// cross data versions), but worth knowing when touching the data file.
 
 import type { Disruption, DisruptionOption, Mission } from '../types/mission';
 import type { ShiftState } from '../types/shift';

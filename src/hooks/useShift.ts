@@ -95,13 +95,32 @@ interface ShiftInit {
   pauseStart: number | null;
 }
 
+const SHIFT_PHASES: ReadonlyArray<ShiftState['phase']> = ['idle', 'running', 'paused', 'ended'];
+
 function loadPersistedShift(storageKey: string | undefined): ShiftState | null {
   if (!storageKey) {
     return null;
   }
   try {
     const raw = localStorage.getItem(storageKey);
-    return raw ? (JSON.parse(raw) as ShiftState) : null;
+    if (!raw) {
+      return null;
+    }
+    const parsed = JSON.parse(raw) as Partial<ShiftState>;
+    // Minimal shape guard: a malformed blob (e.g. `{}`) would otherwise pass
+    // the `phase !== 'idle'` resume check and freeze the board with a state
+    // no reducer branch matches. Discarding it costs only the saved shift.
+    if (
+      !parsed ||
+      !SHIFT_PHASES.includes(parsed.phase as ShiftState['phase']) ||
+      !Array.isArray(parsed.calls) ||
+      !Array.isArray(parsed.activeMissions) ||
+      typeof parsed.lastTickMs !== 'number' ||
+      typeof parsed.config !== 'object'
+    ) {
+      return null;
+    }
+    return parsed as ShiftState;
   } catch {
     return null;
   }

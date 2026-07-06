@@ -294,8 +294,10 @@ function useSignatureUplinks({
     heroById(MALEVOLA_ID)
   );
 
+  // Guard availability in the handlers too, not just the buttons' disabled
+  // state — the once-per-shift rule shouldn't hinge on the DOM.
   const onPrismExtend = () => {
-    if (!selectedCallId) {
+    if (!selectedCallId || !prismAvailable) {
       return;
     }
     // extendCall is a pure no-op if the call is no longer open.
@@ -304,7 +306,7 @@ function useSignatureUplinks({
   };
 
   const onMalevolaReveal = () => {
-    if (!selectedCallId) {
+    if (!selectedCallId || !malevolaAvailable) {
       return;
     }
     setRevealedCallId(selectedCallId);
