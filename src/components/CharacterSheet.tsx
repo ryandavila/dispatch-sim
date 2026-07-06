@@ -1,10 +1,16 @@
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
+import { useEffect, useState } from 'react';
 import { getEffectiveStats, getInjuryCount, isDowned, isInjured } from '../engine/injury';
 import type { Character } from '../types/character';
-import { calculateTotalAllocatedPoints } from '../types/character';
-import type { PillarType } from '../types/stats';
-import { PILLARS } from '../types/stats';
+import {
+  getExperienceForLevel,
+  getExperienceForNextLevel,
+  isExperienceCapped,
+} from '../types/character';
+import type { StatPool } from '../types/stats';
+import { HeroPortrait } from './HeroPortrait';
 import { RadarChart } from './RadarChart';
+import { STAT_ROW_ORDER, StatIcon } from './statIcons';
 
 interface CharacterSheetProps {
   character: Character;
@@ -13,116 +19,301 @@ interface CharacterSheetProps {
   onHealCharacter: (character: Character) => void;
 }
 
+/** Alliterative role epithet per hero, shown under the hero name (e.g. "MERCILESS MERCENARY"). */
+const HERO_EPITHETS: Record<string, string> = {
+  sonar: 'SNEAKY SHAPESHIFTER',
+  flambae: 'FEROCIOUS FIREBRAND',
+  'punch-up': 'UNBREAKABLE BRAWLER',
+  prism: 'PRISMATIC PERSUADER',
+  invisigal: 'INVISIBLE INFILTRATOR',
+  coupe: 'MERCILESS MERCENARY',
+  malevola: 'MERCIFUL MENACE',
+  golem: 'STALWART STONE-SKIN',
+  phenomaman: 'PEERLESS POWERHOUSE',
+  waterboy: 'FLUID FIXER',
+};
+
+type TabId = 'upgrade' | 'powers' | 'info';
+
+const TABS: { id: TabId; label: string }[] = [
+  { id: 'upgrade', label: 'Upgrade' },
+  { id: 'powers', label: 'Powers' },
+  { id: 'info', label: 'Info' },
+];
+
 export function CharacterSheet({
   character,
   medKits,
   onUpdateCharacter,
   onHealCharacter,
 }: CharacterSheetProps) {
-  const _allocatedPoints = calculateTotalAllocatedPoints(character.stats);
-  const canAllocate = character.availablePoints > 0;
+  const [activeTab, setActiveTab] = useState<TabId>('upgrade');
+  // Staged (pending, unconfirmed) allocation, keyed by pillar. Cleared on
+  // RESET, on CONFIRM, and whenever the selected character changes.
+  const [pending, setPending] = useState<StatPool>({
+    Combat: 0,
+    Vigor: 0,
+    Mobility: 0,
+    Charisma: 0,
+    Intellect: 0,
+  });
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: character.id is the deliberate trigger — pending allocation resets when switching heroes
+  useEffect(() => {
+    setPending({ Combat: 0, Vigor: 0, Mobility: 0, Charisma: 0, Intellect: 0 });
+  }, [character.id]);
+
   const injured = isInjured(character);
   const downed = isDowned(character);
   const effectiveStats = getEffectiveStats(character);
 
-  const handleIncreaseStat = (pillar: PillarType) => {
-    if (character.availablePoints <= 0) return;
+  const pendingTotal = Object.values(pending).reduce((sum, v) => sum + v, 0);
+  const unspent = character.availablePoints - pendingTotal;
 
-    const updatedCharacter = {
-      ...character,
-      stats: {
-        ...character.stats,
-        [pillar]: character.stats[pillar] + 1,
-      },
-      availablePoints: character.availablePoints - 1,
-    };
-
-    onUpdateCharacter(updatedCharacter);
+  const previewStats: StatPool = {
+    Combat: effectiveStats.Combat + pending.Combat,
+    Vigor: effectiveStats.Vigor + pending.Vigor,
+    Mobility: effectiveStats.Mobility + pending.Mobility,
+    Charisma: effectiveStats.Charisma + pending.Charisma,
+    Intellect: effectiveStats.Intellect + pending.Intellect,
   };
 
+  const handleAddPending = (pillar: keyof StatPool) => {
+    if (unspent <= 0) return;
+    setPending((prev) => ({ ...prev, [pillar]: prev[pillar] + 1 }));
+  };
+
+  const handleRemovePending = (pillar: keyof StatPool) => {
+    setPending((prev) => {
+      if (prev[pillar] <= 0) return prev;
+      return { ...prev, [pillar]: prev[pillar] - 1 };
+    });
+  };
+
+  const handleReset = () => {
+    setPending({ Combat: 0, Vigor: 0, Mobility: 0, Charisma: 0, Intellect: 0 });
+  };
+
+  const handleConfirm = () => {
+    if (pendingTotal <= 0) return;
+    const updatedCharacter: Character = {
+      ...character,
+      stats: {
+        Combat: character.stats.Combat + pending.Combat,
+        Vigor: character.stats.Vigor + pending.Vigor,
+        Mobility: character.stats.Mobility + pending.Mobility,
+        Charisma: character.stats.Charisma + pending.Charisma,
+        Intellect: character.stats.Intellect + pending.Intellect,
+      },
+      availablePoints: character.availablePoints - pendingTotal,
+    };
+    onUpdateCharacter(updatedCharacter);
+    handleReset();
+  };
+
+  const epithet = HERO_EPITHETS[character.id] ?? 'FIELD AGENT';
+
+  const xpForCurrentLevel = getExperienceForLevel(character.level, character.xpToLevel2);
+  const xpForNextLevel = getExperienceForNextLevel(character.level, character.xpToLevel2);
+  const xpIntoCurrentLevel = character.experience - xpForCurrentLevel;
+  const xpNeededForLevel = xpForNextLevel - xpForCurrentLevel;
+  const isCapped = isExperienceCapped(character);
+  const xpProgress = isCapped ? 100 : (xpIntoCurrentLevel / xpNeededForLevel) * 100;
+
   return (
-    <div className="character-sheet">
-      <div className="character-header">
-        <h2>{character.name}</h2>
-        <div className="character-level">
-          <span>Level {character.level}</span>
+    <div className="hs-file">
+      {/* LEFT: portrait panel */}
+      <div className="sdn-window hs-portrait-panel">
+        <div className="hs-portrait-art">
+          <HeroPortrait heroId={character.id} size={260} />
+        </div>
+        <div>
+          <h2 className="hs-hero-name">{character.name}</h2>
+          <p className="hs-hero-subtitle">
+            {epithet} <span aria-hidden="true">|</span>{' '}
+            <span className="hs-rank">RANK {character.level}</span>
+          </p>
+        </div>
+        {character.tags && character.tags.length > 0 && (
+          <div className="hs-chip-row">
+            {character.tags.map((tag) => (
+              <span key={tag} className="sdn-chip">
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
+        {injured && (
+          <div className="hs-alert-strip">
+            <span className="hs-alert-text">
+              {downed
+                ? `Downed — cannot deploy (−${getInjuryCount(character)} to all stats)`
+                : 'Injured — −1 to all stats'}
+            </span>
+            <button
+              type="button"
+              className="sdn-btn"
+              onClick={() => onHealCharacter(character)}
+              disabled={medKits <= 0}
+              title={medKits <= 0 ? 'No med kits left' : 'Clear all injuries'}
+            >
+              Use Med Kit ({medKits} left)
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* CENTER: tab strip + panel */}
+      <div className="hs-center">
+        <div className="hs-tabstrip">
+          {TABS.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              className={`hs-tab ${activeTab === tab.id ? 'active' : ''}`}
+              onClick={() => setActiveTab(tab.id)}
+            >
+              <span className="hs-tab-star">★</span>
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="hs-tab-panel">
+          <AnimatePresence initial={false}>
+            {activeTab === 'upgrade' && (
+              <motion.div
+                key="upgrade"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
+              >
+                <div className="hs-points-strip">
+                  <span className="hs-star">★</span>
+                  {`SKILL POINTS UNSPENT: ${unspent}`}
+                </div>
+                <div className="hs-stat-rows">
+                  {STAT_ROW_ORDER.map((pillar) => (
+                    <div key={pillar} className="hs-stat-row">
+                      <span className="hs-stat-row-icon">
+                        <StatIcon pillar={pillar} size={20} />
+                      </span>
+                      <span className="hs-stat-row-label">{pillar}</span>
+                      <div className="hs-stepper">
+                        <button
+                          type="button"
+                          className="hs-stepper-btn"
+                          onClick={() => handleRemovePending(pillar)}
+                          disabled={pending[pillar] <= 0}
+                          aria-label={`Remove pending ${pillar} point`}
+                        >
+                          −
+                        </button>
+                        <span className="hs-stepper-value">
+                          {effectiveStats[pillar]}
+                          {pending[pillar] > 0 && (
+                            <span className="hs-pending"> (+{pending[pillar]})</span>
+                          )}
+                        </span>
+                        <button
+                          type="button"
+                          className="hs-stepper-btn"
+                          onClick={() => handleAddPending(pillar)}
+                          disabled={unspent <= 0}
+                          aria-label={`Increase ${pillar}`}
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="hs-upgrade-actions">
+                  <button
+                    type="button"
+                    className="sdn-btn"
+                    onClick={handleReset}
+                    disabled={pendingTotal <= 0}
+                  >
+                    Reset
+                  </button>
+                  <button
+                    type="button"
+                    className="sdn-btn sdn-btn-primary"
+                    onClick={handleConfirm}
+                    disabled={pendingTotal <= 0}
+                  >
+                    Confirm
+                  </button>
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === 'powers' && (
+              <motion.div
+                key="powers"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
+              >
+                {character.notes && <p className="hs-powers-notes">{character.notes}</p>}
+                <div className="hs-powers-badges">
+                  {character.canFly && <span className="sdn-chip">Flight</span>}
+                  {character.isFlightLicensed && <span className="sdn-chip">Flight Licensed</span>}
+                  {!character.canFly && !character.isFlightLicensed && (
+                    <span className="sdn-chip">Grounded</span>
+                  )}
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === 'info' && (
+              <motion.div
+                key="info"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
+              >
+                <div className="hs-info-row">
+                  <span className="hs-info-row-label">Level</span>
+                  <span className="hs-info-row-value">{character.level}</span>
+                </div>
+                <div className="hs-info-row">
+                  <span className="hs-info-row-label">Experience</span>
+                  <span className="hs-info-row-value">
+                    {isCapped
+                      ? `${character.experience} XP (MAX)`
+                      : `${xpIntoCurrentLevel} / ${xpNeededForLevel} XP`}
+                  </span>
+                </div>
+                <div className="hs-xp-bar-track">
+                  <div
+                    className="hs-xp-bar-fill"
+                    style={{ width: `${Math.min(100, Math.max(0, xpProgress))}%` }}
+                  />
+                </div>
+                {character.fixedRank && (
+                  <p className="hs-fixed-rank-note">RANK FIXED — NO FACTORING</p>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 
-      {injured && (
-        <div className={`injury-banner ${downed ? 'downed' : ''}`}>
-          <span className="injury-status">
-            {downed
-              ? `⛔ Downed — cannot deploy (−${getInjuryCount(character)} to all stats)`
-              : '🩹 Injured — −1 to all stats'}
-          </span>
-          <button
-            type="button"
-            className="heal-button"
-            onClick={() => onHealCharacter(character)}
-            disabled={medKits <= 0}
-            title={medKits <= 0 ? 'No med kits left' : 'Clear all injuries'}
-          >
-            Use Med Kit ({medKits} left)
-          </button>
-        </div>
-      )}
-
-      <div className="points-info">
-        <span className="available-points">
-          Available Points: <strong>{character.availablePoints}</strong>
-        </span>
-      </div>
-
-      <div className="character-content">
-        <div className="radar-section">
+      {/* RIGHT: graph window */}
+      <div className="sdn-window hs-graph-window">
+        <div className="sdn-window-title">{character.name}.GRAPH</div>
+        <div className="sdn-window-body">
           <RadarChart
             stats={effectiveStats}
+            previewStats={pendingTotal > 0 ? previewStats : undefined}
             maxValue={10}
-            size={400}
-            onVertexClick={handleIncreaseStat}
+            size={340}
           />
-        </div>
-
-        <div className="stats-list">
-          {PILLARS.map((pillar) => (
-            <motion.div
-              key={pillar}
-              className="stat-row"
-              whileHover={{ scale: 1.02 }}
-              transition={{ duration: 0.2 }}
-            >
-              <span className="stat-name">{pillar}</span>
-              <div className="stat-controls">
-                <motion.span
-                  className="stat-value"
-                  key={effectiveStats[pillar]}
-                  initial={{ scale: 1.5, color: '#14b8a6' }}
-                  animate={{ scale: 1, color: '#2a2419' }}
-                  transition={{ duration: 0.3 }}
-                >
-                  {effectiveStats[pillar]}
-                </motion.span>
-                {effectiveStats[pillar] !== character.stats[pillar] && (
-                  <span
-                    className="stat-allocated"
-                    title={`Allocated ${character.stats[pillar]}, reduced by injury`}
-                  >
-                    ({character.stats[pillar]})
-                  </span>
-                )}
-                <button
-                  type="button"
-                  onClick={() => handleIncreaseStat(pillar)}
-                  disabled={!canAllocate}
-                  className="stat-button increase"
-                  aria-label={`Increase ${pillar}`}
-                >
-                  +
-                </button>
-              </div>
-            </motion.div>
-          ))}
         </div>
       </div>
     </div>

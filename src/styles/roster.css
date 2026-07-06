@@ -1,0 +1,493 @@
+/* ==========================================================================
+   Hero screen (Roster / hero file) — mirrors the reference game's
+   UPGRADE / POWERS / INFO hero card + bottom roster bar.
+   Class names are prefixed `hs-` (hero screen).
+   ========================================================================== */
+
+.hs-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* -- hero file: three-column layout -------------------------------------- */
+
+.hs-file {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(360px, 1.3fr) minmax(280px, 1fr);
+  gap: 0.9rem;
+  align-items: start;
+}
+
+@media (max-width: 1100px) {
+  .hs-file {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* -- left panel: portrait + name + tags ----------------------------------- */
+
+.hs-portrait-panel {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  min-height: 480px;
+}
+
+.hs-portrait-art {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex: 1;
+}
+
+.hs-hero-name {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 2.6rem;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  color: var(--ink);
+  margin: 0;
+}
+
+.hs-hero-subtitle {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.05rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin: -0.4rem 0 0;
+}
+
+.hs-hero-subtitle .hs-rank {
+  color: var(--amber-deep);
+  font-weight: 800;
+}
+
+.hs-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+/* -- injury alert strip ---------------------------------------------------- */
+
+.hs-alert-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.55rem 0.8rem;
+  background: linear-gradient(to bottom, var(--alert-bright), var(--alert));
+  border: 2px solid var(--ink);
+  border-radius: var(--radius);
+  color: var(--paper-bright);
+}
+
+.hs-alert-text {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* -- center: tab strip + panel -------------------------------------------- */
+
+.hs-center {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.hs-tabstrip {
+  display: flex;
+  gap: 4px;
+}
+
+.hs-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  justify-content: center;
+  padding: 0.55rem 1rem;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--paper-bright);
+  background: linear-gradient(to bottom, #1d6a64, #175750);
+  border: 2px solid var(--ink);
+  border-bottom: none;
+  border-radius: var(--radius) var(--radius) 0 0;
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  transition: filter 0.12s ease;
+}
+
+.hs-tab:hover {
+  filter: brightness(1.15);
+}
+
+.hs-tab.active {
+  background: linear-gradient(to bottom, var(--amber-bright), var(--amber));
+  color: var(--ink);
+}
+
+.hs-tab-star {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.1em;
+  height: 1.1em;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 0.62em;
+  line-height: 1;
+  flex: none;
+}
+
+.hs-tab-panel {
+  background: var(--paper);
+  border: var(--border-ink);
+  border-radius: 0 0 var(--radius) var(--radius);
+  padding: 1.1rem;
+  min-height: 420px;
+  color: var(--ink);
+}
+
+/* -- UPGRADE tab ----------------------------------------------------------- */
+
+.hs-points-strip {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.8rem;
+  margin-bottom: 0.8rem;
+  background: var(--paper-bright);
+  border: 2px solid var(--ink);
+  border-radius: var(--radius);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.hs-points-strip .hs-star {
+  color: var(--amber-deep);
+}
+
+.hs-stat-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.hs-stat-row {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.5rem 0.8rem;
+  background: var(--paper-bright);
+  border: 2px solid var(--ink);
+  border-radius: var(--radius);
+}
+
+.hs-stat-row-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink);
+  flex: none;
+}
+
+.hs-stat-row-label {
+  flex: 1;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.02rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hs-stepper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.hs-stepper-btn {
+  width: 1.9rem;
+  height: 1.9rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: var(--ink);
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: var(--radius);
+  cursor: pointer;
+  line-height: 1;
+}
+
+.hs-stepper-btn:hover:not(:disabled) {
+  background: var(--khaki);
+}
+
+.hs-stepper-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.hs-stepper-value {
+  min-width: 1.6rem;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--ink);
+}
+
+.hs-stepper-value .hs-pending {
+  color: var(--amber-deep);
+}
+
+.hs-upgrade-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+/* -- POWERS tab -------------------------------------------------------------- */
+
+.hs-powers-notes {
+  font-family: var(--font-body);
+  font-size: 0.98rem;
+  line-height: 1.5;
+  color: var(--ink);
+  white-space: pre-line;
+  margin: 0 0 1rem;
+}
+
+.hs-powers-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* -- INFO tab ---------------------------------------------------------------- */
+
+.hs-info-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--paper-edge);
+  font-family: var(--font-display);
+  letter-spacing: 0.04em;
+}
+
+.hs-info-row-label {
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+
+.hs-info-row-value {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  color: var(--ink);
+}
+
+.hs-xp-bar-track {
+  margin-top: 0.6rem;
+  height: 14px;
+  background: var(--paper-bright);
+  border: 2px solid var(--ink);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.hs-xp-bar-fill {
+  height: 100%;
+  background: linear-gradient(to bottom, var(--amber-bright), var(--amber));
+}
+
+.hs-fixed-rank-note {
+  margin-top: 0.7rem;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--alert-deep);
+}
+
+/* -- right: graph window --------------------------------------------------- */
+
+.hs-graph-window .sdn-window-body {
+  padding: 0.5rem;
+  display: flex;
+  justify-content: center;
+}
+
+.hs-radar-chart {
+  overflow: visible;
+  filter: drop-shadow(0 0 20px rgba(69, 169, 158, 0.25));
+}
+
+/* -- radar chart container + legend (RadarChart / OverlayRadarChart) --------
+   Shared by the hero file, call briefing, call report, and archive call
+   details — so this lives in roster.css (the hs- prefix owner) even though
+   it's used cross-page. */
+
+.hs-radar-chart-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.hs-chart-legend {
+  display: flex;
+  gap: 1.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.hs-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.hs-legend-color {
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius);
+  border: 1px solid var(--ink);
+}
+
+.hs-success-probability {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--sdn-teal);
+  margin-top: 0.5rem;
+}
+
+/* ==========================================================================
+   Bottom hero roster bar
+   ========================================================================== */
+
+.hs-roster-bar {
+  display: flex;
+  gap: 0.6rem;
+  overflow-x: auto;
+  padding: 0.3rem 0.1rem 0.5rem;
+}
+
+.hs-hero-tile {
+  position: relative;
+  flex: none;
+  width: 108px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem 0.4rem 0.6rem;
+  background: var(--sdn-teal);
+  border: 2px solid var(--ink);
+  border-radius: var(--radius);
+  cursor: pointer;
+  color: var(--paper-bright);
+  transition:
+    filter 0.12s ease,
+    transform 0.08s ease;
+}
+
+.hs-hero-tile:hover {
+  filter: brightness(1.1);
+}
+
+.hs-hero-tile.hs-selected {
+  background: linear-gradient(to bottom, var(--amber-bright), var(--amber));
+  color: var(--ink);
+}
+
+.hs-hero-tile.hs-downed {
+  background: var(--alert-deep);
+  filter: saturate(0.6) brightness(0.75);
+}
+
+.hs-hero-tile.hs-injured::after {
+  content: "";
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--alert-bright);
+  border: 1px solid var(--ink);
+}
+
+.hs-hero-portrait-frame {
+  width: 76px;
+  height: 76px;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 2px solid var(--ink);
+  background: var(--sdn-teal-deep);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hs-hero-tile-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.82rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  text-align: center;
+  line-height: 1.1;
+}
+
+.hs-star-badge {
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--ink);
+  border: 1.5px solid var(--paper-bright);
+  color: var(--ink-faint);
+  font-size: 0.75rem;
+}
+
+.hs-star-badge.hs-has-points {
+  background: var(--amber);
+  color: var(--ink);
+}

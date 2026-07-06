@@ -2,149 +2,168 @@
  * @vitest-environment jsdom
  */
 
-import { render, screen } from '@testing-library/react';
-import { BrowserRouter } from 'react-router-dom';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import { Roster } from './Roster';
+
+const agents = [
+  {
+    id: 'agent-1',
+    name: 'Alpha Agent',
+    level: 1,
+    experience: 0,
+    stats: { Combat: 2, Vigor: 2, Mobility: 2, Charisma: 2, Intellect: 2 },
+    availablePoints: 0,
+    canFly: false,
+    isFlightLicensed: false,
+    restTime: 5,
+  },
+  {
+    id: 'agent-2',
+    name: 'Beta Agent',
+    level: 2,
+    experience: 1200,
+    stats: { Combat: 3, Vigor: 2, Mobility: 2, Charisma: 2, Intellect: 2 },
+    availablePoints: 2,
+    canFly: false,
+    isFlightLicensed: false,
+    restTime: 5,
+  },
+  {
+    id: 'agent-3',
+    name: 'Charlie Agent',
+    level: 1,
+    experience: 500,
+    stats: { Combat: 2, Vigor: 3, Mobility: 2, Charisma: 2, Intellect: 2 },
+    availablePoints: 1,
+    canFly: false,
+    isFlightLicensed: false,
+    restTime: 5,
+    injuryCount: 1,
+  },
+  {
+    id: 'agent-4',
+    name: 'Delta Agent',
+    level: 3,
+    experience: 2000,
+    stats: { Combat: 2, Vigor: 2, Mobility: 2, Charisma: 2, Intellect: 2 },
+    availablePoints: 0,
+    canFly: false,
+    isFlightLicensed: false,
+    restTime: 5,
+    injuryCount: 2,
+  },
+];
 
 // Mock the hooks
 vi.mock('../hooks/useAgentProgress', () => ({
   useAgentProgress: vi.fn(() => ({
-    agents: [
-      {
-        id: 'agent-1',
-        name: 'Alpha Agent',
-        level: 1,
-        experience: 0,
-        stats: { Combat: 2, Vigor: 2, Mobility: 2, Charisma: 2, Intellect: 2 },
-        availablePoints: 0,
-        canFly: false,
-        isFlightLicensed: false,
-        restTime: 5,
-      },
-      {
-        id: 'agent-2',
-        name: 'Beta Agent',
-        level: 2,
-        experience: 1200,
-        stats: { Combat: 3, Vigor: 2, Mobility: 2, Charisma: 2, Intellect: 2 },
-        availablePoints: 2,
-        canFly: false,
-        isFlightLicensed: false,
-        restTime: 5,
-      },
-      {
-        id: 'agent-3',
-        name: 'Charlie Agent',
-        level: 1,
-        experience: 500,
-        stats: { Combat: 2, Vigor: 3, Mobility: 2, Charisma: 2, Intellect: 2 },
-        availablePoints: 1,
-        canFly: false,
-        isFlightLicensed: false,
-        restTime: 5,
-      },
-    ],
+    agents,
     updateAgentStats: vi.fn(),
+    healAgent: vi.fn(),
     awardExperience: vi.fn(),
     resetAgentProgress: vi.fn(),
   })),
 }));
 
-describe('Roster - Agent Sorting', () => {
-  it('should display agents with available points first', () => {
+vi.mock('../hooks/useUserProgress', () => ({
+  useUserProgress: vi.fn(() => ({
+    userProgress: { medKits: 2, shiftSummaries: [] },
+    consumeMedKit: vi.fn(() => true),
+  })),
+}));
+
+describe('Roster - hero roster bar', () => {
+  it('renders a tile for every agent', () => {
     render(
-      <BrowserRouter>
+      <MemoryRouter initialEntries={['/roster']}>
         <Roster />
-      </BrowserRouter>
+      </MemoryRouter>
     );
 
-    const cards = screen.getAllByText(/Level \d+/).map((el) => el.closest('.character-card'));
-    const cardNames = cards.map((card) => card?.querySelector('h3')?.textContent);
-
-    // Beta Agent (2 points) and Charlie Agent (1 point) should come before Alpha Agent (0 points)
-    expect(cardNames[0]).toMatch(/Beta Agent|Charlie Agent/);
-    expect(cardNames[1]).toMatch(/Beta Agent|Charlie Agent/);
-    expect(cardNames[2]).toBe('Alpha Agent');
+    for (const agent of agents) {
+      expect(screen.getAllByText(agent.name).length).toBeGreaterThan(0);
+    }
   });
 
-  it('should show level-up badges on agents with available points', () => {
+  it('defaults to selecting the first agent when no ?character= param is set', () => {
     render(
-      <BrowserRouter>
+      <MemoryRouter initialEntries={['/roster']}>
         <Roster />
-      </BrowserRouter>
+      </MemoryRouter>
     );
 
-    // Should have 2 level-up badges (Beta and Charlie)
-    const badges = screen.getAllByText(/Level Up!/);
-    expect(badges).toHaveLength(2);
+    expect(screen.getByRole('heading', { name: 'Alpha Agent' })).toBeInTheDocument();
   });
 
-  it('should highlight agents with available points', () => {
+  it('selects the agent named by the ?character= query param', () => {
+    render(
+      <MemoryRouter initialEntries={['/roster?character=agent-2']}>
+        <Roster />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByRole('heading', { name: 'Beta Agent' })).toBeInTheDocument();
+  });
+
+  it('marks the selected tile with the amber-highlight class', () => {
     const { container } = render(
-      <BrowserRouter>
+      <MemoryRouter initialEntries={['/roster?character=agent-2']}>
         <Roster />
-      </BrowserRouter>
+      </MemoryRouter>
     );
 
-    // Should have 2 cards with has-level-up class
-    const highlightedCards = container.querySelectorAll('.has-level-up');
-    expect(highlightedCards).toHaveLength(2);
-  });
-});
-
-describe('Roster - Sorting Logic', () => {
-  it('sorts agents with points first, then by selected criteria', () => {
-    const agents = [
-      { name: 'Alpha', availablePoints: 0, level: 5 },
-      { name: 'Beta', availablePoints: 2, level: 1 },
-      { name: 'Charlie', availablePoints: 0, level: 3 },
-      { name: 'Delta', availablePoints: 1, level: 2 },
-    ];
-
-    const sorted = [...agents].sort((a, b) => {
-      // Prioritize agents with available points
-      const aHasPoints = a.availablePoints > 0;
-      const bHasPoints = b.availablePoints > 0;
-      if (aHasPoints !== bHasPoints) {
-        return bHasPoints ? 1 : -1;
-      }
-
-      // Then sort by name
-      return a.name.localeCompare(b.name);
-    });
-
-    // Agents with points first (Beta, Delta), then alphabetically (Alpha, Charlie)
-    expect(sorted[0].name).toBe('Beta');
-    expect(sorted[1].name).toBe('Delta');
-    expect(sorted[2].name).toBe('Alpha');
-    expect(sorted[3].name).toBe('Charlie');
+    const selectedTile = container.querySelector('.hs-hero-tile.hs-selected');
+    expect(selectedTile?.textContent).toContain('Beta Agent');
   });
 
-  it('maintains secondary sort order within groups', () => {
-    const agents = [
-      { name: 'Zulu', availablePoints: 0, level: 1 },
-      { name: 'Yankee', availablePoints: 2, level: 3 },
-      { name: 'Alpha', availablePoints: 0, level: 5 },
-      { name: 'Bravo', availablePoints: 1, level: 2 },
-    ];
+  it('switches the hero file when a different tile is clicked', () => {
+    render(
+      <MemoryRouter initialEntries={['/roster']}>
+        <Roster />
+      </MemoryRouter>
+    );
 
-    const sorted = [...agents].sort((a, b) => {
-      const aHasPoints = a.availablePoints > 0;
-      const bHasPoints = b.availablePoints > 0;
-      if (aHasPoints !== bHasPoints) {
-        return bHasPoints ? 1 : -1;
-      }
+    const charlieTile = screen.getByText('Charlie Agent').closest('.hs-hero-tile');
+    expect(charlieTile).not.toBeNull();
+    fireEvent.click(charlieTile as HTMLElement);
 
-      // Sort by level descending
-      return b.level - a.level;
-    });
+    expect(screen.getByRole('heading', { name: 'Charlie Agent' })).toBeInTheDocument();
+  });
 
-    // With points, sorted by level: Yankee (L3), Bravo (L2)
-    // Without points, sorted by level: Alpha (L5), Zulu (L1)
-    expect(sorted[0].name).toBe('Yankee');
-    expect(sorted[1].name).toBe('Bravo');
-    expect(sorted[2].name).toBe('Alpha');
-    expect(sorted[3].name).toBe('Zulu');
+  it('shows a filled star badge only for agents with unspent points', () => {
+    const { container } = render(
+      <MemoryRouter initialEntries={['/roster']}>
+        <Roster />
+      </MemoryRouter>
+    );
+
+    const filledBadges = container.querySelectorAll('.hs-star-badge.hs-has-points');
+    // Beta Agent (2 points) and Charlie Agent (1 point)
+    expect(filledBadges).toHaveLength(2);
+  });
+
+  it('applies the downed treatment to an agent with two injuries', () => {
+    render(
+      <MemoryRouter initialEntries={['/roster']}>
+        <Roster />
+      </MemoryRouter>
+    );
+
+    const deltaTile = screen.getByText('Delta Agent').closest('.hs-hero-tile');
+    expect(deltaTile).toHaveClass('hs-downed');
+  });
+
+  it('applies the injured tick to an agent with one injury', () => {
+    render(
+      <MemoryRouter initialEntries={['/roster']}>
+        <Roster />
+      </MemoryRouter>
+    );
+
+    const charlieTile = screen.getByText('Charlie Agent').closest('.hs-hero-tile');
+    expect(charlieTile).toHaveClass('hs-injured');
+    expect(charlieTile).not.toHaveClass('hs-downed');
   });
 });

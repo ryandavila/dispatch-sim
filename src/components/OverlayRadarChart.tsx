@@ -3,6 +3,7 @@ import { useState } from 'react';
 import type { PillarType, StatPool } from '../types/stats';
 import { PILLARS } from '../types/stats';
 import { calculateSuccessProbability } from '../utils/geometry';
+import { StatIcon } from './statIcons';
 
 interface ChartLayer {
   stats: StatPool;
@@ -27,7 +28,7 @@ export function OverlayRadarChart({
   const [_hoveredPillar, _setHoveredPillar] = useState<PillarType | null>(null);
 
   const center = size / 2;
-  const radius = (size / 2) * 0.65;
+  const radius = (size / 2) * 0.62;
 
   const angleStep = (2 * Math.PI) / 5;
   const startAngle = -Math.PI / 2;
@@ -50,6 +51,8 @@ export function OverlayRadarChart({
   };
 
   const gridLevels = [0.2, 0.4, 0.6, 0.8, 1.0];
+  const glyphRadius = 15;
+  const glyphDistance = radius + 24;
 
   // Calculate success probability if we have exactly 2 layers
   let successProbability: number | null = null;
@@ -58,8 +61,17 @@ export function OverlayRadarChart({
   }
 
   return (
-    <div className="radar-chart-container">
-      <svg width={size} height={size} className="radar-chart">
+    <div className="hs-radar-chart-container">
+      <svg width={size} height={size} className="hs-radar-chart">
+        {/* Near-black pentagon plate behind the grid */}
+        <polygon
+          points={PILLARS.map((_, index) => {
+            const pos = getMaxVertexPosition(index);
+            return `${pos.x},${pos.y}`;
+          }).join(' ')}
+          fill="#1d1e20"
+        />
+
         {/* Background grid */}
         {gridLevels.map((level) => {
           const gridPoints = PILLARS.map((_, index) => {
@@ -75,7 +87,7 @@ export function OverlayRadarChart({
               key={level}
               points={gridPoints}
               fill="none"
-              stroke="rgba(138, 122, 94, 0.3)"
+              stroke="rgba(221, 154, 43, 0.5)"
               strokeWidth="1"
             />
           );
@@ -91,7 +103,7 @@ export function OverlayRadarChart({
               y1={center}
               x2={pos.x}
               y2={pos.y}
-              stroke="rgba(138, 122, 94, 0.3)"
+              stroke="rgba(221, 154, 43, 0.5)"
               strokeWidth="1"
             />
           );
@@ -119,37 +131,41 @@ export function OverlayRadarChart({
           );
         })}
 
-        {/* Pillar labels */}
+        {/* Vertex glyph badges */}
         {PILLARS.map((pillar, index) => {
           const angle = startAngle + angleStep * index;
-          const labelDistance = radius + 40;
-          const labelX = center + labelDistance * Math.cos(angle);
-          const labelY = center + labelDistance * Math.sin(angle);
+          const glyphX = center + glyphDistance * Math.cos(angle);
+          const glyphY = center + glyphDistance * Math.sin(angle);
 
           return (
-            <text
-              key={pillar}
-              x={labelX}
-              y={labelY}
-              textAnchor="middle"
-              dominantBaseline="middle"
-              fill="#2a2419"
-              fontSize="12"
-              fontWeight="700"
-              style={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}
-            >
-              {pillar}
-            </text>
+            <g key={pillar}>
+              <circle
+                cx={glyphX}
+                cy={glyphY}
+                r={glyphRadius}
+                fill="#1d1e20"
+                stroke="#17181a"
+                strokeWidth="1.5"
+              />
+              <foreignObject
+                x={glyphX - glyphRadius * 0.55}
+                y={glyphY - glyphRadius * 0.55}
+                width={glyphRadius * 1.1}
+                height={glyphRadius * 1.1}
+              >
+                <StatIcon pillar={pillar} size={glyphRadius * 1.1} color="#ece4d1" />
+              </foreignObject>
+            </g>
           );
         })}
       </svg>
 
       {/* Legend */}
-      <div className="chart-legend">
+      <div className="hs-chart-legend">
         {layers.map((layer, index) => (
-          <div key={index} className="legend-item">
+          <div key={index} className="hs-legend-item">
             <div
-              className="legend-color"
+              className="hs-legend-color"
               style={{ backgroundColor: layer.color.replace(/0\.\d+\)$/, '1)') }}
             />
             <span>{layer.label}</span>
@@ -159,7 +175,9 @@ export function OverlayRadarChart({
 
       {/* Success probability */}
       {successProbability !== null && (
-        <div className="success-probability">Success: {(successProbability * 100).toFixed(0)}%</div>
+        <div className="hs-success-probability">
+          Success: {(successProbability * 100).toFixed(0)}%
+        </div>
       )}
     </div>
   );
