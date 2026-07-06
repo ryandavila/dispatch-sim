@@ -67,6 +67,7 @@ describe('useUserProgress', () => {
     expect(result.current.userProgress.bestRankScore).toBe(0);
     expect(result.current.userProgress.defibrillators).toBe(0);
     expect(result.current.userProgress.defibUsedShift).toBeUndefined();
+    expect(result.current.userProgress.powerUsage).toEqual({});
   });
 
   it('records shift summaries in order (source of truth for shift number)', () => {
@@ -490,6 +491,51 @@ describe('useUserProgress', () => {
       expect(result.current.userProgress.defibrillators).toBe(stock - 2);
       expect(result.current.userProgress.defibUsedShift).toBe(2);
     });
+  });
+
+  it('records a hero power use stamped with the shift number', () => {
+    const { result } = renderHook(() => useUserProgress());
+
+    act(() => {
+      result.current.recordPowerUse('golem', 1);
+    });
+
+    expect(result.current.userProgress.powerUsage).toEqual({ golem: 1 });
+  });
+
+  it('tracks power usage per hero independently and updates on reuse', () => {
+    const { result } = renderHook(() => useUserProgress());
+
+    act(() => {
+      result.current.recordPowerUse('golem', 1);
+    });
+    act(() => {
+      result.current.recordPowerUse('prism', 1);
+    });
+    act(() => {
+      result.current.recordPowerUse('golem', 2);
+    });
+
+    expect(result.current.userProgress.powerUsage).toEqual({ golem: 2, prism: 1 });
+  });
+
+  it('fills in an empty powerUsage for saves from before signature powers existed', () => {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        completedMissionIds: [],
+        missionCompletions: [],
+        totalExperience: 50,
+        medKits: 3,
+        synergyDispatchCounts: {},
+        pityRemaining: 3,
+        shiftSummaries: [],
+      })
+    );
+
+    const { result } = renderHook(() => useUserProgress());
+
+    expect(result.current.userProgress.powerUsage).toEqual({});
   });
 
   it('should handle corrupted localStorage data gracefully', () => {

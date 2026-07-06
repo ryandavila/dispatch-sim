@@ -149,6 +149,18 @@ export function useUserProgress() {
     return true;
   };
 
+  /**
+   * Record that a hero's signature power was used during the given shift.
+   * Stamping the usage with the shift number is what makes it "once per
+   * shift" — the next shift's number won't match, re-enabling the power.
+   */
+  const recordPowerUse = (heroId: string, shiftNumber: number) => {
+    setUserProgress((prev) => ({
+      ...prev,
+      powerUsage: { ...prev.powerUsage, [heroId]: shiftNumber },
+    }));
+  };
+
   const isMissionCompleted = (missionId: string): boolean => {
     return userProgress.completedMissionIds.includes(missionId);
   };
@@ -167,6 +179,7 @@ export function useUserProgress() {
     consumePity,
     applyRankProgress,
     consumeDefibrillator,
+    recordPowerUse,
     isMissionCompleted,
     resetProgress,
   };

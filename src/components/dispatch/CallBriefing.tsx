@@ -5,6 +5,7 @@ import type { Character } from '../../types/character';
 import type { Mission } from '../../types/mission';
 import { getDifficultyColor, getSuccessColor } from '../../utils/colors';
 import { HeroPortrait } from '../HeroPortrait';
+import { OverlayRadarChart } from '../OverlayRadarChart';
 import { RadarChart } from '../RadarChart';
 
 interface CallBriefingProps {
@@ -15,6 +16,14 @@ interface CallBriefingProps {
   onRemoveAgent: (agent: Character) => void;
   onDeploy: () => void;
   onClose: () => void;
+  /** Whether Prism's signature power (extend this call's countdown) is available. */
+  prismAvailable?: boolean;
+  onPrismExtend?: () => void;
+  /** Whether Malevola's signature power (reveal the requirement pentagon) is available. */
+  malevolaAvailable?: boolean;
+  onMalevolaReveal?: () => void;
+  /** True once Malevola's uplink has revealed this call's requirement graph. */
+  requirementsRevealed?: boolean;
 }
 
 /**
@@ -30,6 +39,11 @@ export function CallBriefing({
   onRemoveAgent,
   onDeploy,
   onClose,
+  prismAvailable,
+  onPrismExtend,
+  malevolaAvailable,
+  onMalevolaReveal,
+  requirementsRevealed,
 }: CallBriefingProps) {
   const slots = Array.from({ length: mission.maxAgents }, (_, i) => selectedAgents[i] ?? null);
   const teamStats =
@@ -105,9 +119,71 @@ export function CallBriefing({
             <RadarChart stats={teamStats} size={230} />
           </div>
         )}
-        <div className="dm-briefing-classified">
-          REQUIREMENT GRAPH CLASSIFIED — REVEALED IN THE CALL REPORT
-        </div>
+
+        {(onPrismExtend || onMalevolaReveal) && (
+          <div className="dm-uplinks">
+            <div className="dm-uplinks-label">SIGNATURE UPLINKS</div>
+            <div className="dm-uplinks-row">
+              {onPrismExtend && (
+                <button
+                  type="button"
+                  className="sdn-chip dm-uplink-chip"
+                  disabled={!prismAvailable}
+                  onClick={onPrismExtend}
+                  title="Extend this call's countdown by 10 seconds. Once per shift."
+                >
+                  {prismAvailable ? 'Prism — Extend Window +10s' : 'Prism — Used This Shift'}
+                </button>
+              )}
+              {onMalevolaReveal && (
+                <button
+                  type="button"
+                  className="sdn-chip dm-uplink-chip"
+                  disabled={!malevolaAvailable}
+                  onClick={onMalevolaReveal}
+                  title="Reveal this call's hidden requirement graph. Once per shift."
+                >
+                  {malevolaAvailable || requirementsRevealed
+                    ? 'Malevola — Reveal Requirements'
+                    : 'Malevola — Used This Shift'}
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {requirementsRevealed ? (
+          <div className="dm-briefing-chart">
+            <OverlayRadarChart
+              layers={[
+                {
+                  stats: mission.requirements,
+                  color: 'rgba(217, 119, 6, 0.35)',
+                  label: 'Required',
+                  fillOpacity: 0.3,
+                },
+                ...(teamStats
+                  ? [
+                      {
+                        stats: teamStats,
+                        color: 'rgba(20, 184, 166, 0.5)',
+                        label: 'Team',
+                        fillOpacity: 0.3,
+                      },
+                    ]
+                  : []),
+              ]}
+              size={230}
+            />
+            <div className="dm-briefing-classified dm-uplink-classified">
+              MALEVOLA UPLINK — REQUIREMENT GRAPH
+            </div>
+          </div>
+        ) : (
+          <div className="dm-briefing-classified">
+            REQUIREMENT GRAPH CLASSIFIED — REVEALED IN THE CALL REPORT
+          </div>
+        )}
 
         <div className="dm-prob-row">
           <span className="dm-prob-label">Projected success</span>

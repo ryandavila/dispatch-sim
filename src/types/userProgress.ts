@@ -27,6 +27,8 @@ export interface UserProgress {
   defibrillators: number;
   /** Shift number in which the one-per-shift defibrillator was last used. */
   defibUsedShift?: number;
+  /** Hero id → shift number the hero's signature power was last used in. */
+  powerUsage: Record<string, number>;
 }
 
 /** Med kits a new player starts with. */
@@ -46,4 +48,5 @@ export const INITIAL_USER_PROGRESS: UserProgress = {
   rankScore: 0,
   bestRankScore: 0,
   defibrillators: 0,
+  powerUsage: {},
 };

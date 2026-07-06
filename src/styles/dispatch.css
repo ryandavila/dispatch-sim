@@ -460,6 +460,47 @@
   text-align: center;
 }
 
+.dm-uplink-classified {
+  color: var(--amber-deep);
+  margin-top: 0.35rem;
+}
+
+.dm-uplinks {
+  border-top: 2px solid var(--paper-edge);
+  padding-top: 0.6rem;
+}
+
+.dm-uplinks-label {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--amber-deep);
+  margin-bottom: 0.4rem;
+}
+
+.dm-uplinks-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.dm-uplink-chip {
+  cursor: pointer;
+  background: var(--paper-bright);
+  transition: filter 0.1s ease;
+}
+
+.dm-uplink-chip:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.dm-uplink-chip:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .dm-briefing-actions {
   display: flex;
   gap: 0.6rem;

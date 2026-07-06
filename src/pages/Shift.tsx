@@ -13,6 +13,13 @@ import {
 } from '../engine/disruption';
 import { isDowned } from '../engine/injury';
 import {
+  canUseHeroPower,
+  extendCall,
+  MALEVOLA_ID,
+  PRISM_EXTEND_MS,
+  PRISM_ID,
+} from '../engine/powers';
+import {
   applyRankDelta,
   RANK_TIERS,
   type RankProgress,
@@ -231,6 +238,68 @@ function briefingProbability(
   }).probability;
 }
 
+/**
+ * Prism + Malevola signature uplinks on the briefing window. Each is once per
+ * shift and only needs its hero not-downed — a hero out on a call can still
+ * radio in. Prism stretches the selected call's countdown; Malevola reveals
+ * the call's (normally hidden) requirement pentagon for as long as that
+ * briefing is on screen.
+ */
+function useSignatureUplinks({
+  agents,
+  powerUsage,
+  shiftNumber,
+  selectedCallId,
+  update,
+  recordPowerUse,
+}: {
+  agents: Character[];
+  powerUsage: Record<string, number>;
+  shiftNumber: number;
+  selectedCallId: string | null;
+  update: (fn: (state: ShiftState) => ShiftState) => void;
+  recordPowerUse: (heroId: string, shiftNumber: number) => void;
+}) {
+  // Keyed by call id: the reveal only applies to the briefing it was bought
+  // for. Cleared on shift start (call ids repeat shift-to-shift).
+  const [revealedCallId, setRevealedCallId] = useState<string | null>(null);
+
+  const heroById = (id: string) => agents.find((a) => a.id === id);
+  const prismAvailable = canUseHeroPower(PRISM_ID, powerUsage, shiftNumber, heroById(PRISM_ID));
+  const malevolaAvailable = canUseHeroPower(
+    MALEVOLA_ID,
+    powerUsage,
+    shiftNumber,
+    heroById(MALEVOLA_ID)
+  );
+
+  const onPrismExtend = () => {
+    if (!selectedCallId) {
+      return;
+    }
+    // extendCall is a pure no-op if the call is no longer open.
+    update((state) => extendCall(state, selectedCallId, PRISM_EXTEND_MS));
+    recordPowerUse(PRISM_ID, shiftNumber);
+  };
+
+  const onMalevolaReveal = () => {
+    if (!selectedCallId) {
+      return;
+    }
+    setRevealedCallId(selectedCallId);
+    recordPowerUse(MALEVOLA_ID, shiftNumber);
+  };
+
+  return {
+    prismAvailable,
+    malevolaAvailable,
+    onPrismExtend,
+    onMalevolaReveal,
+    requirementsRevealed: revealedCallId !== null && revealedCallId === selectedCallId,
+    resetReveals: () => setRevealedCallId(null),
+  };
+}
+
 function loadStoredReports(): ActiveMission[] {
   try {
     const raw = localStorage.getItem(REPORTS_STORAGE_KEY);
@@ -253,6 +322,7 @@ export function Shift() {
     applyRankProgress,
     consumeDefibrillator,
     consumePity,
+    recordPowerUse,
   } = useUserProgress();
 
   // Source of truth for "which shift am I on": next = prior summaries + 1.
@@ -369,6 +439,15 @@ export function Shift() {
     ...reports.flatMap((m) => m.agents.map((a) => a.id)),
   ]);
 
+  const uplinks = useSignatureUplinks({
+    agents,
+    powerUsage: userProgress.powerUsage,
+    shiftNumber: currentShiftNumber,
+    selectedCallId,
+    update,
+    recordPowerUse,
+  });
+
   const {
     disruptionMission,
     onDisruptionResolve: handleDisruptionResolve,
@@ -468,6 +547,7 @@ export function Shift() {
     setReports([]);
     setOpenReportId(null);
     setXpPops([]);
+    uplinks.resetReveals();
     start(configForShift(currentShiftNumber));
   };
 
@@ -563,6 +643,11 @@ export function Shift() {
               onRemoveAgent={toggleAgentSelection}
               onDeploy={handleDeploy}
               onClose={closeBriefing}
+              prismAvailable={uplinks.prismAvailable}
+              onPrismExtend={uplinks.onPrismExtend}
+              malevolaAvailable={uplinks.malevolaAvailable}
+              onMalevolaReveal={uplinks.onMalevolaReveal}
+              requirementsRevealed={uplinks.requirementsRevealed}
             />
           )}
 

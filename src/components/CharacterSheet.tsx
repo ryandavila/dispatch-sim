@@ -22,6 +22,13 @@ interface CharacterSheetProps {
   /** False once the one-per-shift defib charge has been spent. */
   defibAvailableThisShift: boolean;
   onDefibrillate: (character: Character) => void;
+  /**
+   * Whether this hero's signature power can be used right now (once per
+   * shift; see engine/powers.ts). Only rendered when both this and
+   * `onUsePower` are provided, so other call sites compile unchanged.
+   */
+  powerAvailable?: boolean;
+  onUsePower?: (character: Character) => void;
 }
 
 /** Alliterative role epithet per hero, shown under the hero name (e.g. "MERCILESS MERCENARY"). */
@@ -119,6 +126,8 @@ export function CharacterSheet({
   defibrillators,
   defibAvailableThisShift,
   onDefibrillate,
+  powerAvailable,
+  onUsePower,
 }: CharacterSheetProps) {
   const [activeTab, setActiveTab] = useState<TabId>('upgrade');
   // Staged (pending, unconfirmed) allocation, keyed by pillar. Cleared on
@@ -332,6 +341,24 @@ export function CharacterSheet({
                     <span className="sdn-chip">Grounded</span>
                   )}
                 </div>
+
+                {onUsePower && (
+                  <div className="hs-signature-power">
+                    <div className="hs-signature-power-label">SIGNATURE — FACTORY RESET</div>
+                    <p className="hs-signature-power-desc">
+                      Refund every allocated skill point and reset stats to baseline. Once per
+                      shift.
+                    </p>
+                    <button
+                      type="button"
+                      className="sdn-btn sdn-btn-primary"
+                      disabled={!powerAvailable}
+                      onClick={() => onUsePower(character)}
+                    >
+                      {powerAvailable ? 'Factory Reset' : 'Used This Shift'}
+                    </button>
+                  </div>
+                )}
               </motion.div>
             )}
 

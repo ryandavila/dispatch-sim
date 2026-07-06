@@ -3,14 +3,17 @@ import { useSearchParams } from 'react-router-dom';
 import { CharacterSheet } from '../components/CharacterSheet';
 import { HeroPortrait } from '../components/HeroPortrait';
 import { isDowned, isInjured } from '../engine/injury';
+import { canUseHeroPower, GOLEM_ID, golemStatReset } from '../engine/powers';
 import { useAgentProgress } from '../hooks/useAgentProgress';
 import { useUserProgress } from '../hooks/useUserProgress';
 import '../styles/roster.css';
 import type { Character } from '../types/character';
+import { loadAgentById } from '../utils/dataLoader';
 
 export function Roster() {
   const { agents, updateAgentStats, healAgent } = useAgentProgress();
-  const { userProgress, consumeMedKit, consumeDefibrillator } = useUserProgress();
+  const { userProgress, consumeMedKit, consumeDefibrillator, recordPowerUse } =
+    useUserProgress();
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Source of truth for "which shift am I on": next = prior summaries + 1
@@ -51,6 +54,19 @@ export function Roster() {
     healAgent(character.id);
   };
 
+  const powerUsage = userProgress.powerUsage ?? {};
+  const golemPowerAvailable =
+    selectedCharacter?.id === GOLEM_ID &&
+    canUseHeroPower(GOLEM_ID, powerUsage, currentShiftNumber, selectedCharacter);
+
+  const handleUseGolemPower = (character: Character) => {
+    const base = loadAgentById(GOLEM_ID);
+    if (!base) return;
+    const reset = golemStatReset(character, base);
+    updateAgentStats(reset);
+    recordPowerUse(GOLEM_ID, currentShiftNumber);
+  };
+
   return (
     <div className="hs-page">
       {selectedCharacter && (
@@ -62,6 +78,8 @@ export function Roster() {
           defibrillators={userProgress.defibrillators}
           defibAvailableThisShift={userProgress.defibUsedShift !== currentShiftNumber}
           onDefibrillate={handleDefibrillate}
+          powerAvailable={selectedCharacter.id === GOLEM_ID ? golemPowerAvailable : undefined}
+          onUsePower={selectedCharacter.id === GOLEM_ID ? handleUseGolemPower : undefined}
         />
       )}
 
