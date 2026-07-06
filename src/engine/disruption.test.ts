@@ -159,13 +159,19 @@ describe('bakeDisruption', () => {
   });
 
   it('respects DISRUPTION_CHANCE as the pass/fail cutoff', () => {
-    expect(DISRUPTION_CHANCE).toBe(0.5);
     const atCutoffRng: Rng = (() => {
-      const values = [0.5, 0]; // exactly at cutoff — should fail (>= cutoff fails)
+      const values = [DISRUPTION_CHANCE, 0]; // exactly at cutoff — should fail (>= cutoff fails)
       let i = 0;
       return () => values[i++];
     })();
     expect(bakeDisruption(MISSION_WITH_DISRUPTION, 0, 1000, atCutoffRng)).toBeNull();
+
+    const justUnderCutoffRng: Rng = (() => {
+      const values = [DISRUPTION_CHANCE - 0.01, 0]; // just under cutoff — should pass
+      let i = 0;
+      return () => values[i++];
+    })();
+    expect(bakeDisruption(MISSION_WITH_DISRUPTION, 0, 1000, justUnderCutoffRng)).not.toBeNull();
   });
 });
 

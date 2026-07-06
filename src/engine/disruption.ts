@@ -24,7 +24,7 @@ import type { Rng } from './rng';
 export { combineTeamStats as sumTeamStats } from './resolution';
 
 /** Seeded chance that a mission with authored disruption data actually fires one. */
-export const DISRUPTION_CHANCE = 0.5;
+export const DISRUPTION_CHANCE = 0.3;
 
 /** Result of baking a mission's disruption at deploy time. */
 export interface BakedDisruption {
