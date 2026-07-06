@@ -19,17 +19,21 @@ jobs:
         with:
           bun-version: latest
 
-      - name: Install just
-        uses: extractions/setup-just@v4
+      - name: Cache bun install cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+          restore-keys: ${{ runner.os }}-bun-
 
       - name: Install dependencies
-        run: just install
+        run: bun install --frozen-lockfile
 
       - name: Run linter
-        run: just lint
+        run: bunx biome check .
 
       - name: Run tests
-        run: just test
+        run: bun run test
 
       - name: Build project
-        run: just build
+        run: bun run build
