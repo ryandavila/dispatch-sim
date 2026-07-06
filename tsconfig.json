@@ -1,4 +1,10 @@
 {
   "files": [],
-  "references": [{ "path": "./tsconfig.app.json" }, { "path": "./tsconfig.node.json" }]
+  "references": [{ "path": "./tsconfig.app.json" }, { "path": "./tsconfig.node.json" }],
+  "compilerOptions": {
+    // test files are excluded from tsconfig.app.json, so vite 8's oxc
+    // transform resolves them to this solution config; without a jsx
+    // setting here they'd compile with the classic runtime and crash
+    "jsx": "react-jsx"
+  }
 }
