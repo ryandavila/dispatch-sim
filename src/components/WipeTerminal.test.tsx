@@ -2,7 +2,7 @@
  * @vitest-environment jsdom
  */
 
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { WIPE_STORAGE_KEYS, WipeTerminal } from './WipeTerminal';
 
@@ -50,14 +50,22 @@ describe('WipeTerminal', () => {
     expect(resetAgentProgress).not.toHaveBeenCalled();
   });
 
-  it('confirming calls both resets and clears the mid-shift storage keys', () => {
+  it('confirming calls both resets, clears the mid-shift storage keys, and reboots', () => {
+    vi.useFakeTimers();
     const resetProgress = vi.fn();
     const resetAgentProgress = vi.fn();
+    const reboot = vi.fn();
     for (const key of WIPE_STORAGE_KEYS) {
       localStorage.setItem(key, JSON.stringify({ stale: true }));
     }
 
-    render(<WipeTerminal resetProgress={resetProgress} resetAgentProgress={resetAgentProgress} />);
+    render(
+      <WipeTerminal
+        resetProgress={resetProgress}
+        resetAgentProgress={resetAgentProgress}
+        reboot={reboot}
+      />
+    );
 
     fireEvent.click(screen.getByRole('button', { name: /wipe terminal/i }));
     fireEvent.change(screen.getByLabelText(/type wipe to confirm/i), {
@@ -71,6 +79,13 @@ describe('WipeTerminal', () => {
       expect(localStorage.getItem(key)).toBeNull();
     }
     expect(screen.getByText(/terminal wiped/i)).toBeInTheDocument();
+
+    expect(reboot).not.toHaveBeenCalled();
+    act(() => {
+      vi.runAllTimers();
+    });
+    expect(reboot).toHaveBeenCalledTimes(1);
+    vi.useRealTimers();
   });
 
   it('does not confirm on a partial/incorrect token (case-insensitive match required)', () => {

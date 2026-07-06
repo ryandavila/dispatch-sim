@@ -1,27 +1,43 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 /** localStorage keys holding mid-shift state that must not survive a wipe. */
 export const WIPE_STORAGE_KEYS = ['dispatch-sim-shift', 'dispatch-sim-reports'] as const;
 
 const CONFIRM_TOKEN = 'WIPE';
+const REBOOT_DELAY_MS = 1200;
 
 interface WipeTerminalProps {
   /** Resets account-level progress (med kits, rank, shift history, ...). */
   resetProgress: () => void;
   /** Resets per-hero progress (level, XP, stats, injuries). */
   resetAgentProgress: () => void;
+  /** Overridable for tests; defaults to a full page reload. */
+  reboot?: () => void;
 }
 
 /**
  * Diegetic "new campaign" affordance: arm the wipe, then type WIPE to confirm.
  * Two deliberate steps so a stray click can't nuke a save.
  */
-export function WipeTerminal({ resetProgress, resetAgentProgress }: WipeTerminalProps) {
+export function WipeTerminal({
+  resetProgress,
+  resetAgentProgress,
+  reboot = () => window.location.reload(),
+}: WipeTerminalProps) {
   const [armed, setArmed] = useState(false);
   const [confirmText, setConfirmText] = useState('');
   const [wiped, setWiped] = useState(false);
 
   const canConfirm = confirmText.trim().toUpperCase() === CONFIRM_TOKEN;
+
+  // App.tsx holds its own useUserProgress/useAgentProgress instances (plain
+  // useState, no shared store), so its chrome keeps rendering pre-wipe values
+  // until the page reloads. Reboot to guarantee no stale in-memory state.
+  useEffect(() => {
+    if (!wiped) return;
+    const timer = window.setTimeout(reboot, REBOOT_DELAY_MS);
+    return () => window.clearTimeout(timer);
+  }, [wiped, reboot]);
 
   const handleArm = () => {
     setArmed(true);
@@ -48,7 +64,7 @@ export function WipeTerminal({ resetProgress, resetAgentProgress }: WipeTerminal
   if (wiped) {
     return (
       <div className="hs-wipe hs-wipe-done sdn-readout">
-        » TERMINAL WIPED — campaign reset. Reload to begin fresh.
+        » TERMINAL WIPED — campaign reset. Rebooting…
       </div>
     );
   }
