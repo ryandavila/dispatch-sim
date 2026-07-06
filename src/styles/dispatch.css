@@ -1,0 +1,859 @@
+/* ==========================================================================
+   DISPATCH BOARD — the Torrance map terminal (Shift page)
+   Live wire-frame city map with pulsing call markers, the hero roster rail,
+   paper briefing/report windows. All classes prefixed dm-.
+   ========================================================================== */
+
+.dm-page {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+/* -- board window ---------------------------------------------------------- */
+
+.dm-board .sdn-window-title {
+  gap: 0.9rem;
+}
+
+.dm-hud-shift {
+  color: var(--amber-bright);
+}
+
+.dm-hud-status {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  color: var(--sdn-text-dim);
+}
+
+.dm-hud-status.paused {
+  color: var(--amber-bright);
+}
+
+.dm-hud-tally {
+  display: inline-flex;
+  gap: 0.8rem;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+}
+
+.dm-tally-ok {
+  color: var(--ok-bright);
+}
+
+.dm-tally-fail {
+  color: var(--alert-bright);
+}
+
+.dm-tally-miss {
+  color: var(--sdn-text-dim);
+}
+
+/* -- the map ---------------------------------------------------------------- */
+
+.dm-map {
+  position: relative;
+  aspect-ratio: 1000 / 620;
+  background: #0a1a19;
+  overflow: hidden;
+}
+
+.dm-map-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* -- markers ----------------------------------------------------------------
+   Positioned by % of the map; centered on their point. */
+
+.dm-marker {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.dm-marker:focus-visible {
+  outline: 2px solid var(--amber-bright);
+  outline-offset: 3px;
+}
+
+/* open call: amber "!" with countdown ring + ripple */
+.dm-marker-call {
+  width: 52px;
+  height: 52px;
+}
+
+.dm-marker-call::before {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border-radius: 50%;
+  border: 2px solid var(--amber);
+  animation: dm-ripple 1.6s ease-out infinite;
+}
+
+.dm-marker-call.urgent::before {
+  border-color: var(--alert-bright);
+  animation-duration: 0.7s;
+}
+
+@keyframes dm-ripple {
+  0% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+}
+
+.dm-marker-call-core {
+  position: absolute;
+  inset: 10px;
+  border-radius: 50%;
+  background: var(--amber);
+  border: 2px solid var(--ink);
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.25rem;
+  line-height: 1;
+  color: var(--ink);
+  transition: transform 0.1s ease;
+}
+
+.dm-marker-call:hover .dm-marker-call-core {
+  transform: scale(1.12);
+}
+
+.dm-marker-call.urgent .dm-marker-call-core {
+  background: var(--alert-bright);
+  color: var(--paper-bright);
+}
+
+.dm-marker-ring {
+  position: absolute;
+  inset: 0;
+  transform: rotate(-90deg);
+}
+
+.dm-marker-ring circle {
+  fill: none;
+}
+
+.dm-marker-ring .track {
+  stroke: rgba(23, 24, 26, 0.75);
+  stroke-width: 3.5;
+}
+
+.dm-marker-ring .fill {
+  stroke: var(--paper-bright);
+  stroke-width: 3.5;
+  stroke-linecap: round;
+}
+
+.dm-marker-call.urgent .dm-marker-ring .fill {
+  stroke: var(--alert-bright);
+}
+
+/* team on scene: small teal beacon with rotating dashes */
+.dm-marker-onscene {
+  width: 34px;
+  height: 34px;
+  cursor: default;
+}
+
+.dm-marker-onscene-core {
+  position: absolute;
+  inset: 6px;
+  border-radius: 50%;
+  background: var(--sdn-teal);
+  border: 2px solid var(--ink);
+  display: grid;
+  place-items: center;
+}
+
+.dm-marker-onscene-core svg {
+  display: block;
+}
+
+.dm-marker-onscene-ring {
+  position: absolute;
+  inset: 0;
+  animation: dm-spin 3.2s linear infinite;
+}
+
+.dm-marker-onscene-ring circle {
+  fill: none;
+  stroke: var(--sdn-teal-bright);
+  stroke-width: 2;
+  stroke-dasharray: 5 7;
+}
+
+@keyframes dm-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* resolved call awaiting review: paper check badge */
+.dm-marker-report {
+  width: 44px;
+  height: 44px;
+  animation: dm-drop-in 0.35s cubic-bezier(0.2, 1.6, 0.4, 1);
+}
+
+@keyframes dm-drop-in {
+  from {
+    transform: translate(-50%, -80%) scale(0.4);
+    opacity: 0;
+  }
+}
+
+.dm-marker-report-core {
+  position: absolute;
+  inset: 5px;
+  border-radius: 50%;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 1.15rem;
+  color: var(--ink);
+  box-shadow: 0 0 0 0 rgba(221, 154, 43, 0.8);
+  animation: dm-report-pulse 1.4s ease-out infinite;
+}
+
+@keyframes dm-report-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(221, 154, 43, 0.8);
+  }
+  100% {
+    box-shadow: 0 0 0 12px rgba(221, 154, 43, 0);
+  }
+}
+
+.dm-marker-report:hover .dm-marker-report-core {
+  background: var(--amber-bright);
+}
+
+/* -- overlays over the map --------------------------------------------------- */
+
+.dm-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(5, 17, 16, 0.6);
+  backdrop-filter: blur(1.5px);
+  z-index: 5;
+  padding: 1rem;
+}
+
+.dm-overlay-window {
+  width: min(560px, 94%);
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+/* idle / start-of-shift */
+.dm-start-number {
+  font-family: var(--font-title);
+  font-weight: 900;
+  font-size: 3rem;
+  letter-spacing: 0.08em;
+  color: var(--ink);
+  line-height: 1;
+  margin: 0.2rem 0 0.6rem;
+}
+
+.dm-start-body p {
+  margin: 0.4rem 0 1rem;
+  color: var(--ink-soft);
+  font-size: 1.02rem;
+  line-height: 1.45;
+}
+
+.dm-start-hints {
+  margin: 0.8rem 0 1rem;
+  padding: 0.6rem 0.8rem;
+  background: var(--paper-shade);
+  border: 1px solid var(--paper-edge);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+/* -- briefing panel (docked right) ------------------------------------------- */
+
+.dm-briefing {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  bottom: 12px;
+  width: min(400px, 46%);
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+}
+
+.dm-briefing .sdn-window-body {
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.85rem;
+}
+
+.dm-briefing-name {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.5rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink);
+  line-height: 1.1;
+}
+
+.dm-briefing-close {
+  padding: 0 0.55rem;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.dm-briefing-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.dm-briefing-loc {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--ink-soft);
+  letter-spacing: 0.05em;
+}
+
+.dm-difficulty {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.82rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.1rem 0.55rem;
+  border: 2px solid var(--ink);
+  border-radius: var(--radius);
+  color: var(--paper-bright);
+}
+
+.dm-briefing-text {
+  margin: 0;
+  font-size: 1.04rem;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+.dm-kw {
+  font-style: normal;
+  font-weight: 700;
+  background: rgba(221, 154, 43, 0.32);
+  box-shadow: 0 1px 0 var(--amber-deep);
+  padding: 0 3px;
+}
+
+.dm-slots {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.dm-slot {
+  width: 56px;
+  height: 56px;
+  border: 2px dashed var(--ink-faint);
+  border-radius: var(--radius);
+  background: var(--paper-shade);
+  display: grid;
+  place-items: center;
+  padding: 0;
+  color: var(--ink-faint);
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+}
+
+.dm-slot.filled {
+  border-style: solid;
+  border-color: var(--ink);
+  background: var(--sdn-teal);
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.dm-slot.filled:hover {
+  outline: 2px solid var(--alert);
+  outline-offset: 1px;
+}
+
+.dm-slot-hint {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+}
+
+.dm-prob-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.8rem;
+  border-top: 2px solid var(--paper-edge);
+  padding-top: 0.6rem;
+}
+
+.dm-prob-label {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+.dm-prob-value {
+  font-family: var(--font-title);
+  font-weight: 900;
+  font-size: 2.1rem;
+  line-height: 1;
+}
+
+.dm-synergy {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.dm-briefing-chart {
+  align-self: center;
+}
+
+.dm-briefing-classified {
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+  color: var(--ink-faint);
+  text-align: center;
+}
+
+.dm-briefing-actions {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: auto;
+  padding-top: 0.4rem;
+}
+
+.dm-briefing-actions .sdn-btn {
+  flex: 1;
+}
+
+/* -- report window ------------------------------------------------------------ */
+
+.dm-report {
+  width: min(520px, 94%);
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+.dm-report-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.dm-report-chart {
+  position: relative;
+  width: fit-content;
+}
+
+.dm-report-dot {
+  position: absolute;
+  margin-left: -6.5px;
+  margin-top: -6.5px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--amber-bright);
+  border: 2px solid var(--ink);
+  z-index: 2;
+  box-shadow: 0 0 8px rgba(242, 184, 67, 0.9);
+}
+
+.dm-stamp {
+  font-family: var(--font-title);
+  font-weight: 900;
+  font-size: 1.5rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 0.25rem 1rem;
+  border: 3px solid currentColor;
+  border-radius: var(--radius);
+  transform: rotate(-6deg);
+  animation: dm-stamp-in 0.25s cubic-bezier(0.2, 1.8, 0.4, 1);
+  margin: 0.3rem 0;
+}
+
+@keyframes dm-stamp-in {
+  from {
+    transform: rotate(-6deg) scale(2.2);
+    opacity: 0;
+  }
+}
+
+.dm-stamp.ok {
+  color: #2f7a45;
+}
+
+.dm-stamp.fail {
+  color: var(--alert);
+}
+
+.dm-report-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  align-items: center;
+}
+
+.dm-report-crew {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.dm-condition {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.05em;
+}
+
+.dm-condition.hurt {
+  color: var(--alert);
+  font-weight: 600;
+}
+
+/* -- roster rail ---------------------------------------------------------------- */
+
+.dm-roster {
+  display: flex;
+  gap: 0.6rem;
+  padding: 0.7rem 0.8rem 0.55rem;
+  background: rgba(3, 10, 9, 0.65);
+  border: 2px solid rgba(69, 169, 158, 0.25);
+  border-radius: var(--radius);
+  overflow-x: auto;
+}
+
+/* center when there's room without clipping overflow at the left edge */
+.dm-hero:first-child {
+  margin-left: auto;
+}
+
+.dm-hero:last-child {
+  margin-right: auto;
+}
+
+.dm-hero {
+  position: relative;
+  flex: 0 0 auto;
+  width: 92px;
+  border: 2px solid var(--ink);
+  border-radius: var(--radius);
+  background: linear-gradient(to bottom, #35948b, #2a7a72);
+  padding: 0;
+  cursor: pointer;
+  overflow: visible;
+  transition:
+    transform 0.08s ease,
+    filter 0.12s ease;
+}
+
+.dm-hero:hover:not(:disabled) {
+  transform: translateY(-3px);
+}
+
+.dm-hero:disabled {
+  cursor: not-allowed;
+}
+
+.dm-hero-portrait {
+  display: block;
+  border-bottom: 2px solid var(--ink);
+  line-height: 0;
+}
+
+.dm-hero-portrait svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.dm-hero-name {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.74rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--paper-bright);
+  background: rgba(3, 10, 9, 0.55);
+  padding: 0.18rem 0.1rem 0.12rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dm-hero.selected {
+  background: linear-gradient(to bottom, var(--amber-bright), var(--amber));
+}
+
+.dm-hero.selected .dm-hero-name {
+  color: var(--ink);
+  background: rgba(242, 184, 67, 0.4);
+}
+
+.dm-hero.busy {
+  filter: saturate(0.45) brightness(0.75);
+}
+
+.dm-hero.report-locked {
+  outline: 2px dashed var(--amber);
+  outline-offset: 2px;
+}
+
+.dm-hero.downed {
+  filter: grayscale(0.9) brightness(0.6);
+}
+
+.dm-hero.downed::after {
+  content: "✕";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 2.6rem;
+  color: var(--alert-bright);
+  text-shadow: 0 0 6px rgba(0, 0, 0, 0.8);
+}
+
+.dm-hero.dimmed {
+  opacity: 0.45;
+}
+
+/* draining green rest/return meter above the portrait (as in the game) */
+.dm-hero-meter {
+  position: absolute;
+  top: -8px;
+  left: 4px;
+  right: 4px;
+  height: 5px;
+  background: rgba(3, 10, 9, 0.8);
+  border: 1px solid var(--ink);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.dm-hero-meter-fill {
+  height: 100%;
+  background: var(--ok-bright);
+}
+
+/* small level tag + star badge + status ticks */
+.dm-hero-rank {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  font-family: var(--font-mono);
+  font-size: 0.56rem;
+  padding: 0 3px;
+  background: rgba(3, 10, 9, 0.75);
+  color: var(--sdn-text);
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+.dm-hero-star {
+  position: absolute;
+  right: 3px;
+  bottom: 22px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  background: var(--paper-shade);
+  color: var(--ink);
+  font-size: 0.6rem;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.dm-hero-star.has-points {
+  background: var(--amber-bright);
+  animation: dm-report-pulse 1.6s ease-out infinite;
+}
+
+.dm-hero-injury {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 10px;
+  height: 10px;
+  background: var(--alert);
+  border: 1.5px solid var(--ink);
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+.dm-hero-badge {
+  position: absolute;
+  left: 50%;
+  top: 34%;
+  transform: translate(-50%, -50%) rotate(-8deg);
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  padding: 0.1rem 0.4rem;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  color: var(--ink);
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+.dm-hero-xp-pop {
+  position: absolute;
+  left: 50%;
+  top: -14px;
+  transform: translateX(-50%);
+  font-family: var(--font-title);
+  font-weight: 900;
+  font-size: 0.78rem;
+  color: var(--amber-bright);
+  text-shadow:
+    0 1px 0 var(--ink),
+    0 0 10px rgba(242, 184, 67, 0.7);
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 3;
+}
+
+/* -- end-of-shift review -------------------------------------------------------- */
+
+.dm-review-tally {
+  display: flex;
+  justify-content: center;
+  gap: 1.6rem;
+  margin: 0.6rem 0;
+}
+
+.dm-review-stat {
+  text-align: center;
+}
+
+.dm-review-value {
+  font-family: var(--font-title);
+  font-weight: 900;
+  font-size: 2.2rem;
+  line-height: 1;
+}
+
+.dm-review-stat.ok .dm-review-value {
+  color: #2f7a45;
+}
+
+.dm-review-stat.fail .dm-review-value {
+  color: var(--alert);
+}
+
+.dm-review-stat.miss .dm-review-value {
+  color: var(--ink-faint);
+}
+
+.dm-review-label {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-top: 0.15rem;
+}
+
+.dm-review-lit {
+  display: block;
+  width: fit-content;
+  margin: 0.4rem auto;
+}
+
+.dm-review-rewards {
+  border-top: 2px solid var(--paper-edge);
+  margin-top: 0.6rem;
+  padding-top: 0.6rem;
+  text-align: center;
+}
+
+.dm-review-rewards-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  margin-bottom: 0.4rem;
+}
+
+.dm-review-reward-list {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.dm-review-note {
+  margin: 0.5rem 0 0;
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+}
+
+.dm-review-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+/* -- history under the board ------------------------------------------------------ */
+
+.dm-history .sdn-window-body {
+  max-height: 340px;
+  overflow-y: auto;
+}

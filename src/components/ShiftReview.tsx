@@ -23,74 +23,89 @@ export function ShiftReview({
   const total = tally.succeeded + tally.failed + tally.missed;
   // "Shift Was Lit": no failures and no missed calls (matches the real game).
   const flawless = total > 0 && tally.failed === 0 && tally.missed === 0;
-  const earnedAnything =
-    !!rewards && (rewards.statPoints > 0 || rewards.medKits > 0 || rewards.pityCharges > 0);
 
   return (
-    <div className="shift-review">
-      <h2 className="shift-review-title">Shift Review</h2>
+    <div className="sdn-window">
+      <div className="sdn-window-title">SHIFT.PERFORMANCE</div>
+      <div className="sdn-window-body">
+        <div className="dm-review-tally">
+          <div className="dm-review-stat ok">
+            <div className="dm-review-value">{tally.succeeded}</div>
+            <div className="dm-review-label">Succeeded</div>
+          </div>
+          <div className="dm-review-stat fail">
+            <div className="dm-review-value">{tally.failed}</div>
+            <div className="dm-review-label">Failed</div>
+          </div>
+          <div className="dm-review-stat miss">
+            <div className="dm-review-value">{tally.missed}</div>
+            <div className="dm-review-label">Missed</div>
+          </div>
+        </div>
 
-      <div className="shift-review-tally">
-        <div className="shift-review-stat succeeded">
-          <div className="shift-review-value">{tally.succeeded}</div>
-          <div className="shift-review-label">Succeeded</div>
-        </div>
-        <div className="shift-review-stat failed">
-          <div className="shift-review-value">{tally.failed}</div>
-          <div className="shift-review-label">Failed</div>
-        </div>
-        <div className="shift-review-stat missed">
-          <div className="shift-review-value">{tally.missed}</div>
-          <div className="shift-review-label">Missed</div>
-        </div>
+        {flawless && pendingMissions === 0 && (
+          <div className="dm-stamp ok dm-review-lit">🔥 Shift was lit</div>
+        )}
+
+        {pendingMissions === 0 && rewards && (
+          <RewardsSection rewards={rewards} statPointAgentName={statPointAgentName} />
+        )}
+
+        {pendingMissions > 0 ? (
+          <p className="dm-review-note">
+            {pendingMissions} team{pendingMissions === 1 ? '' : 's'} still in the field…
+          </p>
+        ) : (
+          <div className="dm-review-actions">
+            <button type="button" className="sdn-btn sdn-btn-primary" onClick={onNewShift}>
+              Clock in — next shift
+            </button>
+          </div>
+        )}
       </div>
+    </div>
+  );
+}
 
-      {flawless && pendingMissions === 0 && (
-        <div className="shift-review-badge">🔥 Shift Was Lit — no failures, no missed calls!</div>
-      )}
+function RewardsSection({
+  rewards,
+  statPointAgentName,
+}: {
+  rewards: ShiftRewards;
+  statPointAgentName?: string;
+}) {
+  const earnedAnything = rewards.statPoints > 0 || rewards.medKits > 0 || rewards.pityCharges > 0;
 
-      {pendingMissions === 0 && rewards && (
-        <div className="shift-review-rewards">
-          <div className="shift-review-rewards-title">Rewards Earned</div>
-          {earnedAnything ? (
-            <>
-              <div className="shift-review-rewards-list">
-                {rewards.statPoints > 0 && (
-                  <span className="shift-reward">
-                    +{rewards.statPoints} stat pt{rewards.statPoints === 1 ? '' : 's'}
-                  </span>
-                )}
-                {rewards.medKits > 0 && (
-                  <span className="shift-reward">
-                    +{rewards.medKits} med kit{rewards.medKits === 1 ? '' : 's'}
-                  </span>
-                )}
-                {rewards.pityCharges > 0 && (
-                  <span className="shift-reward">+{rewards.pityCharges} pity</span>
-                )}
-              </div>
-              {rewards.statPoints > 0 && statPointAgentName && (
-                <div className="shift-review-rewards-recipient">
-                  Stat points went to <strong>{statPointAgentName}</strong>.
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="shift-review-rewards-none">
-              No rewards this time — succeed on more calls next shift.
-            </div>
+  return (
+    <div className="dm-review-rewards">
+      <div className="dm-review-rewards-title">Dispatcher review — rewards</div>
+      {earnedAnything ? (
+        <>
+          <div className="dm-review-reward-list">
+            {rewards.statPoints > 0 && (
+              <span className="sdn-chip">
+                +{rewards.statPoints} skill point{rewards.statPoints === 1 ? '' : 's'}
+              </span>
+            )}
+            {rewards.medKits > 0 && (
+              <span className="sdn-chip">
+                +{rewards.medKits} bandage{rewards.medKits === 1 ? '' : 's'}
+              </span>
+            )}
+            {rewards.pityCharges > 0 && (
+              <span className="sdn-chip">
+                +{rewards.pityCharges} boost charge{rewards.pityCharges === 1 ? '' : 's'}
+              </span>
+            )}
+          </div>
+          {rewards.statPoints > 0 && statPointAgentName && (
+            <p className="dm-review-note">
+              Skill points assigned to <strong>{statPointAgentName}</strong>.
+            </p>
           )}
-        </div>
-      )}
-
-      {pendingMissions > 0 ? (
-        <p className="shift-review-pending">
-          {pendingMissions} mission{pendingMissions === 1 ? '' : 's'} still returning…
-        </p>
+        </>
       ) : (
-        <button type="button" className="deploy-button" onClick={onNewShift}>
-          Start New Shift
-        </button>
+        <p className="dm-review-note">No rewards this time — clear more calls next shift.</p>
       )}
     </div>
   );

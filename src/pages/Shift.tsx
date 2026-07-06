@@ -1,10 +1,11 @@
-import { useState } from 'react';
-import { ActiveMissionsSection } from '../components/ActiveMissionsSection';
-import { MissionDetailsSection } from '../components/MissionDetailsSection';
-import { ShiftCallCard } from '../components/ShiftCallCard';
+import { useEffect, useRef, useState } from 'react';
+import { CallBriefing } from '../components/dispatch/CallBriefing';
+import { CallReport } from '../components/dispatch/CallReport';
+import { RosterBar, type XpPop } from '../components/dispatch/RosterBar';
+import { TorranceMap } from '../components/dispatch/TorranceMap';
 import { ShiftHistorySection } from '../components/ShiftHistorySection';
 import { ShiftReview } from '../components/ShiftReview';
-import { getEffectiveStats, isDowned } from '../engine/injury';
+import { isDowned } from '../engine/injury';
 import { applyProbabilityModifiers, calculateTeamSuccessProbability } from '../engine/resolution';
 import { createRng } from '../engine/rng';
 import { configForShift, missionPoolForShift } from '../engine/shiftLadder';
@@ -13,12 +14,15 @@ import { getTeamSynergies } from '../engine/synergy';
 import { useAgentProgress } from '../hooks/useAgentProgress';
 import { useShift } from '../hooks/useShift';
 import { useUserProgress } from '../hooks/useUserProgress';
+import '../styles/dispatch.css';
+import { getEffectiveStats } from '../engine/injury';
 import type { ActiveMission } from '../types/activeMission';
 import type { Character } from '../types/character';
 import type { ShiftState } from '../types/shift';
 import type { ShiftRewards, ShiftSummary } from '../types/shiftSummary';
 import { loadMissions } from '../utils/dataLoader';
-import { getMissionTimeBreakdown } from '../utils/missionTime';
+
+const REPORTS_STORAGE_KEY = 'dispatch-sim-reports';
 
 export interface FinalizeDeps {
   currentShiftNumber: number;
@@ -83,6 +87,32 @@ function reviewInfo(
   return { rewards, statPointAgentName };
 }
 
+function computeHudStatus(
+  phase: ShiftState['phase'],
+  showReview: boolean,
+  spawnRemainingMs: number
+): string {
+  if (phase === 'idle') {
+    return 'STANDING BY';
+  }
+  if (phase === 'ended') {
+    return showReview ? 'SHIFT COMPLETE' : 'AWAITING REPORTS';
+  }
+  if (phase === 'paused') {
+    return 'TIME FROZEN';
+  }
+  return `CALLS INBOUND — ${Math.ceil(spawnRemainingMs / 1000)}S`;
+}
+
+function loadStoredReports(): ActiveMission[] {
+  try {
+    const raw = localStorage.getItem(REPORTS_STORAGE_KEY);
+    return raw ? (JSON.parse(raw) as ActiveMission[]) : [];
+  } catch {
+    return [];
+  }
+}
+
 export function Shift() {
   const missions = loadMissions();
   const { agents, awardExperience, applyInjuries, grantAvailablePoints } = useAgentProgress();
@@ -101,8 +131,29 @@ export function Shift() {
   const [selectedCallId, setSelectedCallId] = useState<string | null>(null);
   const [selectedAgents, setSelectedAgents] = useState<Character[]>([]);
 
-  // Same completion handling as the at-will Missions page: XP on success,
-  // injuries on failure, and a recorded completion either way.
+  // Report gate (as in the real game): a settled call sits checked-off on the
+  // map, its heroes locked, until the player reviews and files its report.
+  const [reports, setReports] = useState<ActiveMission[]>(loadStoredReports);
+  const [openReportId, setOpenReportId] = useState<string | null>(null);
+  const [xpPops, setXpPops] = useState<XpPop[]>([]);
+  const popTimersRef = useRef<number[]>([]);
+
+  useEffect(() => {
+    localStorage.setItem(REPORTS_STORAGE_KEY, JSON.stringify(reports));
+  }, [reports]);
+
+  useEffect(
+    () => () => {
+      for (const t of popTimersRef.current) {
+        clearTimeout(t);
+      }
+    },
+    []
+  );
+
+  // Same completion handling as before: XP on success, injuries on failure,
+  // and a recorded completion either way. The mission then joins the report
+  // queue — outcome hidden until the player opens the report.
   const handleMissionComplete = (activeMission: ActiveMission) => {
     const { success } = activeMission.outcome;
     const experienceGained = success ? (activeMission.mission.rewards?.experience ?? 0) : 0;
@@ -121,6 +172,8 @@ export function Shift() {
     } else {
       applyInjuries(agentIds);
     }
+
+    setReports((prev) => [...prev, activeMission]);
   };
 
   // When the shift fully settles, score it, credit its rewards, and record the
@@ -154,7 +207,11 @@ export function Shift() {
 
   const openCalls = shift.calls
     .filter((call) => call.status === 'open')
-    .sort((a, b) => a.expiresAt - b.expiresAt);
+    .sort((a, b) => a.expiresAt - b.expiresAt)
+    .flatMap((call) => {
+      const mission = missions.find((m) => m.id === call.missionId);
+      return mission ? [{ call, mission }] : [];
+    });
 
   const selectedCall =
     shift.calls.find((call) => call.id === selectedCallId && call.status === 'open') ?? null;
@@ -162,8 +219,10 @@ export function Shift() {
     ? (missions.find((m) => m.id === selectedCall.missionId) ?? null)
     : null;
 
-  const busyAgentIds = new Set(shift.activeMissions.flatMap((m) => m.agents.map((a) => a.id)));
-  const isAgentAvailable = (agentId: string) => !busyAgentIds.has(agentId);
+  const busyAgentIds = new Set([
+    ...shift.activeMissions.flatMap((m) => m.agents.map((a) => a.id)),
+    ...reports.flatMap((m) => m.agents.map((a) => a.id)),
+  ]);
 
   const handleRespond = (callId: string) => {
     setSelectedCallId(callId);
@@ -171,21 +230,28 @@ export function Shift() {
     pause(); // opening a call pauses the shift clock (Decision #8)
   };
 
-  const closePanel = () => {
+  const closeBriefing = () => {
     setSelectedCallId(null);
     setSelectedAgents([]);
     resume();
   };
 
+  const canSelectAgent = (agent: Character) =>
+    !!selectedMission &&
+    !isDowned(agent) &&
+    !busyAgentIds.has(agent.id) &&
+    !(selectedMission.excludedAgents ?? []).includes(agent.id) &&
+    selectedAgents.length < selectedMission.maxAgents;
+
   const toggleAgentSelection = (agent: Character) => {
-    if (!selectedMission || isDowned(agent)) {
+    if (!selectedMission) {
       return;
     }
     setSelectedAgents((prev) => {
       if (prev.some((a) => a.id === agent.id)) {
         return prev.filter((a) => a.id !== agent.id);
       }
-      if (prev.length >= selectedMission.maxAgents) {
+      if (!canSelectAgent(agent)) {
         return prev;
       }
       return [...prev, agent];
@@ -197,19 +263,53 @@ export function Shift() {
       return;
     }
     deploy(selectedCall.id, selectedAgents);
-    closePanel();
+    closeBriefing();
+  };
+
+  const handleOpenReport = (activeMissionId: string) => {
+    pause();
+    setOpenReportId(activeMissionId);
+  };
+
+  const handleDismissReport = () => {
+    const report = reports.find((m) => m.id === openReportId);
+    setOpenReportId(null);
+    setReports((prev) => prev.filter((m) => m.id !== openReportId));
+    resume();
+    if (report?.outcome.success) {
+      const xp = report.mission.rewards?.experience ?? 0;
+      const share = Math.max(1, Math.floor(xp / report.agents.length));
+      const stamp = Date.now();
+      setXpPops((prev) => [
+        ...prev,
+        ...report.agents.map((a) => ({
+          agentId: a.id,
+          amount: share,
+          key: `${report.id}-${a.id}`,
+        })),
+      ]);
+      popTimersRef.current.push(
+        window.setTimeout(
+          () => {
+            setXpPops((prev) => prev.filter((p) => !p.key.startsWith(report.id)));
+          },
+          1700 + (stamp % 1)
+        )
+      );
+    }
   };
 
   // Escalating ladder (Track 3): shift N gets more calls on tighter timers.
-  const startShift = () => start(configForShift(currentShiftNumber));
-
-  const handleNewShift = () => {
+  const startShift = () => {
     setSelectedCallId(null);
     setSelectedAgents([]);
-    startShift();
+    setReports([]);
+    setOpenReportId(null);
+    setXpPops([]);
+    start(configForShift(currentShiftNumber));
   };
 
-  // Deploy-panel derived stats — identical modifier stack to the deploy roll.
+  // Briefing-panel derived stats — identical modifier stack to the deploy roll.
   const teamSynergies = getTeamSynergies(
     selectedAgents.map((a) => a.id),
     (pairKey) => userProgress.synergyDispatchCounts[pairKey] ?? 0
@@ -227,120 +327,131 @@ export function Shift() {
           teamSize: selectedAgents.length,
         }).probability
       : 0;
-  const missionTimeBreakdown = selectedMission
-    ? getMissionTimeBreakdown(selectedMission, selectedAgents)
-    : null;
 
-  if (shift.phase === 'idle') {
-    return (
-      <div className="shift-page">
-        <div className="shift-intro">
-          <h2>Start Shift {currentShiftNumber}</h2>
-          <p>
-            Calls arrive over ~3 minutes, each with a countdown. Respond in time or they auto-fail.
-            Opening a call pauses the clock so you can pick a team. Unanswered calls are{' '}
-            <strong>missed</strong>; deployed calls that lose the roll are <strong>failed</strong>{' '}
-            and injure a hero. Later shifts bring more calls on tighter timers.
-          </p>
-          <button type="button" className="deploy-button" onClick={startShift}>
-            Start Shift
-          </button>
-        </div>
-
-        <div className="shift-history">
-          <h3>Campaign History</h3>
-          <ShiftHistorySection summaries={userProgress.shiftSummaries} allAgents={agents} />
-        </div>
-      </div>
-    );
-  }
+  const idle = shift.phase === 'idle';
+  const ended = shift.phase === 'ended';
+  const settled = ended && shift.activeMissions.length === 0;
+  const showReview = settled && reports.length === 0;
+  const openReport = reports.find((m) => m.id === openReportId) ?? null;
 
   const elapsedMs = Math.max(0, now - shift.shiftStartMs);
   const spawnRemainingMs = Math.max(0, shift.config.shiftDurationMs - elapsedMs);
-  const ended = shift.phase === 'ended';
+  const hudShiftNumber = settled
+    ? Math.max(1, userProgress.shiftSummaries.length)
+    : currentShiftNumber;
   const { rewards: shiftRewards, statPointAgentName } = reviewInfo(
     shift,
     userProgress.shiftSummaries,
     agents
   );
 
+  const hudStatus = computeHudStatus(shift.phase, showReview, spawnRemainingMs);
+
   return (
-    <div className="shift-page">
-      <div className="shift-hud">
-        <div className="shift-hud-phase">
-          {ended ? 'Wrapping up' : shift.phase === 'paused' ? 'Paused' : 'On Shift'}
-          {!ended && ` · ${Math.ceil(spawnRemainingMs / 1000)}s of calls left`}
+    <div className="dm-page">
+      <div className="dm-board sdn-window">
+        <div className="sdn-window-title">
+          TORRANCE.MAP
+          <span className="dm-hud-shift">SHIFT {hudShiftNumber}</span>
+          <span className="sdn-window-title-spacer" />
+          {!idle && (
+            <span className="dm-hud-tally" data-testid="hud-tally">
+              <span className="dm-tally-ok">✓ {shift.tally.succeeded}</span>
+              <span className="dm-tally-fail">✗ {shift.tally.failed}</span>
+              <span className="dm-tally-miss">— {shift.tally.missed}</span>
+            </span>
+          )}
+          <span className={`dm-hud-status${shift.phase === 'paused' ? ' paused' : ''}`}>
+            {hudStatus}
+          </span>
         </div>
-        <div className="shift-hud-tally">
-          <span className="tally-succeeded">✓ {shift.tally.succeeded}</span>
-          <span className="tally-failed">✗ {shift.tally.failed}</span>
-          <span className="tally-missed">— {shift.tally.missed}</span>
-        </div>
+
+        <TorranceMap
+          openCalls={idle ? [] : openCalls}
+          activeMissions={shift.activeMissions}
+          reports={reports}
+          now={now}
+          callTimerMs={shift.config.callTimerMs}
+          onRespond={handleRespond}
+          onOpenReport={handleOpenReport}
+        >
+          {idle && (
+            <div className="dm-overlay">
+              <div className="sdn-window dm-overlay-window">
+                <div className="sdn-window-title">SHIFT.START</div>
+                <div className="sdn-window-body dm-start-body">
+                  <div className="dm-start-number">SHIFT {currentShiftNumber}</div>
+                  <p>
+                    The Z-Team is on the clock. Calls land on the map with a countdown — open one to
+                    freeze time and brief a team, or let it expire and eat the miss. Failed calls
+                    injure heroes; review every filed report to free your people for the next call.
+                  </p>
+                  <div className="dm-start-hints sdn-readout">
+                    <span>» BANDAGES IN STOCK: {userProgress.medKits}</span>
+                    <span>» BOOST CHARGES (&gt;76% GUARANTEE): {userProgress.pityRemaining}</span>
+                    <span>» LATER SHIFTS RUN HOTTER: MORE CALLS, TIGHTER TIMERS</span>
+                  </div>
+                  <button type="button" className="sdn-btn sdn-btn-primary" onClick={startShift}>
+                    Clock in
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {selectedMission && selectedCall && (
+            <CallBriefing
+              mission={selectedMission}
+              selectedAgents={selectedAgents}
+              successProbability={successProbability}
+              activeSynergies={teamSynergies.filter((synergy) => synergy.level > 0)}
+              onRemoveAgent={toggleAgentSelection}
+              onDeploy={handleDeploy}
+              onClose={closeBriefing}
+            />
+          )}
+
+          {openReport && (
+            <div className="dm-overlay">
+              <CallReport report={openReport} agents={agents} onDismiss={handleDismissReport} />
+            </div>
+          )}
+
+          {showReview && (
+            <div className="dm-overlay">
+              <div className="dm-overlay-window">
+                <ShiftReview
+                  tally={shift.tally}
+                  pendingMissions={shift.activeMissions.length}
+                  rewards={shiftRewards}
+                  statPointAgentName={statPointAgentName}
+                  onNewShift={startShift}
+                />
+              </div>
+            </div>
+          )}
+        </TorranceMap>
       </div>
 
-      {ended && (
-        <>
-          <ShiftReview
-            tally={shift.tally}
-            pendingMissions={shift.activeMissions.length}
-            rewards={shiftRewards}
-            statPointAgentName={statPointAgentName}
-            onNewShift={handleNewShift}
-          />
-          {shift.activeMissions.length === 0 && userProgress.shiftSummaries.length > 0 && (
-            <div className="shift-history">
-              <h3>Campaign History</h3>
-              <ShiftHistorySection summaries={userProgress.shiftSummaries} allAgents={agents} />
-            </div>
-          )}
-        </>
-      )}
+      <RosterBar
+        agents={agents}
+        activeMissions={shift.activeMissions}
+        reports={reports}
+        now={now}
+        selecting={!!selectedMission}
+        selectedIds={new Set(selectedAgents.map((a) => a.id))}
+        canSelect={canSelectAgent}
+        onToggle={toggleAgentSelection}
+        onOpenReport={handleOpenReport}
+        xpPops={xpPops}
+      />
 
-      {!ended && (
-        <div className="shift-board">
-          <h3>
-            Open Calls ({openCalls.length}/{shift.config.maxOpenCalls})
-          </h3>
-          {openCalls.length === 0 ? (
-            <p className="shift-board-empty">Waiting for calls…</p>
-          ) : (
-            <div className="shift-call-list">
-              {openCalls.map((call) => (
-                <ShiftCallCard
-                  key={call.id}
-                  call={call}
-                  mission={missions.find((m) => m.id === call.missionId)}
-                  now={now}
-                  callTimerMs={shift.config.callTimerMs}
-                  onRespond={handleRespond}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      <ActiveMissionsSection activeMissions={shift.activeMissions} currentTime={now} />
-
-      {selectedMission && selectedCall && (
-        <div className="shift-deploy-panel">
-          <div className="shift-deploy-header">
-            <h3>Respond: {selectedMission.name}</h3>
-            <button type="button" className="shift-deploy-cancel" onClick={closePanel}>
-              ✕ Back
-            </button>
+      {(idle || showReview) && userProgress.shiftSummaries.length > 0 && (
+        <div className="dm-history sdn-window">
+          <div className="sdn-window-title">SHIFT.LOG</div>
+          <div className="sdn-window-body">
+            <ShiftHistorySection summaries={userProgress.shiftSummaries} allAgents={agents} />
           </div>
-          <MissionDetailsSection
-            mission={selectedMission}
-            selectedAgents={selectedAgents}
-            allAgents={agents}
-            successProbability={successProbability}
-            activeSynergies={teamSynergies.filter((synergy) => synergy.level > 0)}
-            missionTimeBreakdown={missionTimeBreakdown}
-            isAgentAvailable={isAgentAvailable}
-            onToggleAgent={toggleAgentSelection}
-            onDeployMission={handleDeploy}
-          />
         </div>
       )}
     </div>
