@@ -35,6 +35,7 @@ export const missionSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
   description: z.string().min(1),
+  briefing: z.string().min(1).optional(),
   requirements: statPoolSchema,
   difficulty: z.enum(['Easy', 'Medium', 'Hard', 'Extreme']),
   maxAgents: z.number().int().positive(),
@@ -42,6 +43,13 @@ export const missionSchema = z.object({
   rewards: z.object({ experience: z.number().nonnegative() }).optional(),
   travelTime: z.number().nonnegative(),
   missionDuration: z.number().nonnegative(),
+  location: z
+    .object({
+      name: z.string().min(1),
+      x: z.number().min(0).max(100),
+      y: z.number().min(0).max(100),
+    })
+    .optional(),
 });
 
 export const synergySchema = z.object({
