@@ -309,17 +309,23 @@ describe('validateMissions — disruption blocks', () => {
     }
   });
 
-  it('spreads hero moments across a good chunk of the roster, not just one or two heroes', () => {
+  it('gives every roster hero a disruption hero moment somewhere in the catalog', () => {
     const missions = loadMissions();
+    const agentIds = loadAgents().map((agent) => agent.id);
     const heroIds = new Set<string>();
     for (const mission of missions) {
       for (const option of mission.disruption?.options ?? []) {
         if (option.heroId !== undefined) heroIds.add(option.heroId);
       }
     }
-    // 10 heroes on the roster — require most of them to have at least one
-    // hero-specific disruption moment somewhere in the 14-mission catalog.
-    expect(heroIds.size).toBeGreaterThanOrEqual(7);
+    // Every hero on the roster now has at least one hero-specific disruption
+    // moment somewhere in the 14-mission catalog — that's the invariant.
+    for (const agentId of agentIds) {
+      expect(
+        heroIds.has(agentId),
+        `hero "${agentId}" has no hero-specific disruption moment in the catalog`
+      ).toBe(true);
+    }
   });
 });
 

@@ -470,6 +470,14 @@
           "xpBonus": 40,
           "passText": "You get right in his face and remind him whose coin this actually was — the rally dies on his lips.",
           "failText": "He shouts right over you and the room surges past both of you."
+        },
+        {
+          "id": "crypto-flambae",
+          "label": "Drop a wall of flame between the crowd and the exits",
+          "heroId": "flambae",
+          "xpBonus": 60,
+          "passText": "Flambae touches down in a ring of fire that stops just short of anyone's skin — the stampede skids to a halt and the ringleader's rally dies with it.",
+          "failText": "Not applicable — Flambae doesn't miss this one."
         }
       ]
     }
@@ -633,12 +641,12 @@
           "failText": "Floor gives out mid-carry — a rough landing, but you're both still moving."
         },
         {
-          "id": "blaze-waterboy",
-          "label": "Blast a water tunnel through the collapse",
-          "heroId": "waterboy",
+          "id": "blaze-phenomaman",
+          "label": "Fly straight through the collapse and carry them out",
+          "heroId": "phenomaman",
           "xpBonus": 90,
-          "passText": "Waterboy punches a wall of water straight through the collapsing floor, carrying the family out on the current, steam and all.",
-          "failText": "Not applicable — Waterboy doesn't miss this one."
+          "passText": "Phenomaman shoulders through the falling beam like it's balsa wood and flies the whole family out through the roof, not a scratch on him.",
+          "failText": "Not applicable — Phenomaman doesn't miss this one."
         }
       ]
     }
