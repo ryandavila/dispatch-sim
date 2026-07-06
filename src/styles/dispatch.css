@@ -311,8 +311,19 @@
 }
 
 .dm-briefing .sdn-window-body {
-  overflow-y: auto;
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
+  min-height: 0;
+}
+
+/* Scrolls independently so the actions row below always stays put. */
+.dm-briefing-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
@@ -503,13 +514,19 @@
 
 .dm-briefing-actions {
   display: flex;
-  gap: 0.6rem;
-  margin-top: auto;
-  padding-top: 0.4rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  flex: none;
+  padding: 0.65rem 0.85rem;
+  border-top: 2px solid var(--paper-edge);
+  background: var(--paper);
 }
 
 .dm-briefing-actions .sdn-btn {
-  flex: 1;
+  flex: 1 1 120px;
+  min-width: 0;
+  padding-left: 0.6rem;
+  padding-right: 0.6rem;
 }
 
 /* -- report window ------------------------------------------------------------ */

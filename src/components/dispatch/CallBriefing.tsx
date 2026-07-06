@@ -61,139 +61,141 @@ export function CallBriefing({
         </button>
       </div>
       <div className="sdn-window-body">
-        <h3 className="dm-briefing-name">{mission.name}</h3>
-        <div className="dm-briefing-meta">
-          <span
-            className="dm-difficulty"
-            style={{ backgroundColor: getDifficultyColor(mission.difficulty) }}
-          >
-            {mission.difficulty}
-          </span>
-          {mission.location && (
-            <span className="dm-briefing-loc">LOC: {mission.location.name}</span>
-          )}
-          <span className="dm-briefing-loc">REWARD: {mission.rewards?.experience ?? 0} XP</span>
-        </div>
-
-        <p className="dm-briefing-text">
-          {renderBriefing(mission.briefing ?? mission.description)}
-        </p>
-
-        <div className="dm-slots">
-          {slots.map((agent, i) =>
-            agent ? (
-              <button
-                key={agent.id}
-                type="button"
-                className="dm-slot filled"
-                onClick={() => onRemoveAgent(agent)}
-                aria-label={`Remove ${agent.name} from the team`}
-              >
-                <HeroPortrait heroId={agent.id} size={52} />
-              </button>
-            ) : (
-              <span key={`empty-${i}`} className="dm-slot" aria-hidden="true">
-                +
-              </span>
-            )
-          )}
-          <span className="dm-slot-hint">
-            {selectedAgents.length === 0
-              ? 'SELECT HEROES FROM THE ROSTER BELOW'
-              : `${selectedAgents.length}/${mission.maxAgents} ASSIGNED`}
-          </span>
-        </div>
-
-        {activeSynergies.length > 0 && (
-          <div className="dm-synergy">
-            {activeSynergies.map((s) => (
-              <span key={s.pair.join('+')} className="sdn-chip">
-                ⚡ {formatPair(s.pair)} +{Math.round(s.level * SYNERGY_BONUS_PER_LEVEL * 100)}%
-              </span>
-            ))}
+        <div className="dm-briefing-scroll">
+          <h3 className="dm-briefing-name">{mission.name}</h3>
+          <div className="dm-briefing-meta">
+            <span
+              className="dm-difficulty"
+              style={{ backgroundColor: getDifficultyColor(mission.difficulty) }}
+            >
+              {mission.difficulty}
+            </span>
+            {mission.location && (
+              <span className="dm-briefing-loc">LOC: {mission.location.name}</span>
+            )}
+            <span className="dm-briefing-loc">REWARD: {mission.rewards?.experience ?? 0} XP</span>
           </div>
-        )}
 
-        {teamStats && (
-          <div className="dm-briefing-chart">
-            <RadarChart stats={teamStats} size={230} />
-          </div>
-        )}
+          <p className="dm-briefing-text">
+            {renderBriefing(mission.briefing ?? mission.description)}
+          </p>
 
-        {(onPrismExtend || onMalevolaReveal) && (
-          <div className="dm-uplinks">
-            <div className="dm-uplinks-label">SIGNATURE UPLINKS</div>
-            <div className="dm-uplinks-row">
-              {onPrismExtend && (
+          <div className="dm-slots">
+            {slots.map((agent, i) =>
+              agent ? (
                 <button
+                  key={agent.id}
                   type="button"
-                  className="sdn-chip dm-uplink-chip"
-                  disabled={!prismAvailable}
-                  onClick={onPrismExtend}
-                  title="Extend this call's countdown by 10 seconds. Once per shift."
+                  className="dm-slot filled"
+                  onClick={() => onRemoveAgent(agent)}
+                  aria-label={`Remove ${agent.name} from the team`}
                 >
-                  {prismAvailable ? 'Prism — Extend Window +10s' : 'Prism — Used This Shift'}
+                  <HeroPortrait heroId={agent.id} size={52} />
                 </button>
-              )}
-              {onMalevolaReveal && (
-                <button
-                  type="button"
-                  className="sdn-chip dm-uplink-chip"
-                  disabled={!malevolaAvailable}
-                  onClick={onMalevolaReveal}
-                  title="Reveal this call's hidden requirement graph. Once per shift."
-                >
-                  {malevolaAvailable || requirementsRevealed
-                    ? 'Malevola — Reveal Requirements'
-                    : 'Malevola — Used This Shift'}
-                </button>
-              )}
-            </div>
+              ) : (
+                <span key={`empty-${i}`} className="dm-slot" aria-hidden="true">
+                  +
+                </span>
+              )
+            )}
+            <span className="dm-slot-hint">
+              {selectedAgents.length === 0
+                ? 'SELECT HEROES FROM THE ROSTER BELOW'
+                : `${selectedAgents.length}/${mission.maxAgents} ASSIGNED`}
+            </span>
           </div>
-        )}
 
-        {requirementsRevealed ? (
-          <div className="dm-briefing-chart">
-            <OverlayRadarChart
-              layers={[
-                {
-                  stats: mission.requirements,
-                  color: 'rgba(217, 119, 6, 0.35)',
-                  label: 'Required',
-                  fillOpacity: 0.3,
-                },
-                ...(teamStats
-                  ? [
-                      {
-                        stats: teamStats,
-                        color: 'rgba(20, 184, 166, 0.5)',
-                        label: 'Team',
-                        fillOpacity: 0.3,
-                      },
-                    ]
-                  : []),
-              ]}
-              size={230}
-            />
-            <div className="dm-briefing-classified dm-uplink-classified">
-              MALEVOLA UPLINK — REQUIREMENT GRAPH
+          {activeSynergies.length > 0 && (
+            <div className="dm-synergy">
+              {activeSynergies.map((s) => (
+                <span key={s.pair.join('+')} className="sdn-chip">
+                  ⚡ {formatPair(s.pair)} +{Math.round(s.level * SYNERGY_BONUS_PER_LEVEL * 100)}%
+                </span>
+              ))}
             </div>
-          </div>
-        ) : (
-          <div className="dm-briefing-classified">
-            REQUIREMENT GRAPH CLASSIFIED — REVEALED IN THE CALL REPORT
-          </div>
-        )}
+          )}
 
-        <div className="dm-prob-row">
-          <span className="dm-prob-label">Projected success</span>
-          <span
-            className="dm-prob-value"
-            style={{ color: getSuccessColor(successProbability) }}
-            data-testid="briefing-probability"
-          >
-            {selectedAgents.length > 0 ? `${Math.round(successProbability * 100)}%` : '——'}
-          </span>
+          {teamStats && !requirementsRevealed && (
+            <div className="dm-briefing-chart">
+              <RadarChart stats={teamStats} size={190} />
+            </div>
+          )}
+
+          {(onPrismExtend || onMalevolaReveal) && (
+            <div className="dm-uplinks">
+              <div className="dm-uplinks-label">SIGNATURE UPLINKS</div>
+              <div className="dm-uplinks-row">
+                {onPrismExtend && (
+                  <button
+                    type="button"
+                    className="sdn-chip dm-uplink-chip"
+                    disabled={!prismAvailable}
+                    onClick={onPrismExtend}
+                    title="Extend this call's countdown by 10 seconds. Once per shift."
+                  >
+                    {prismAvailable ? 'Prism — Extend Window +10s' : 'Prism — Used This Shift'}
+                  </button>
+                )}
+                {onMalevolaReveal && (
+                  <button
+                    type="button"
+                    className="sdn-chip dm-uplink-chip"
+                    disabled={!malevolaAvailable}
+                    onClick={onMalevolaReveal}
+                    title="Reveal this call's hidden requirement graph. Once per shift."
+                  >
+                    {malevolaAvailable || requirementsRevealed
+                      ? 'Malevola — Reveal Requirements'
+                      : 'Malevola — Used This Shift'}
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {requirementsRevealed ? (
+            <div className="dm-briefing-chart">
+              <OverlayRadarChart
+                layers={[
+                  {
+                    stats: mission.requirements,
+                    color: 'rgba(217, 119, 6, 0.35)',
+                    label: 'Required',
+                    fillOpacity: 0.3,
+                  },
+                  ...(teamStats
+                    ? [
+                        {
+                          stats: teamStats,
+                          color: 'rgba(20, 184, 166, 0.5)',
+                          label: 'Team',
+                          fillOpacity: 0.3,
+                        },
+                      ]
+                    : []),
+                ]}
+                size={190}
+              />
+              <div className="dm-briefing-classified dm-uplink-classified">
+                MALEVOLA UPLINK — REQUIREMENT GRAPH
+              </div>
+            </div>
+          ) : (
+            <div className="dm-briefing-classified">
+              REQUIREMENT GRAPH CLASSIFIED — REVEALED IN THE CALL REPORT
+            </div>
+          )}
+
+          <div className="dm-prob-row">
+            <span className="dm-prob-label">Projected success</span>
+            <span
+              className="dm-prob-value"
+              style={{ color: getSuccessColor(successProbability) }}
+              data-testid="briefing-probability"
+            >
+              {selectedAgents.length > 0 ? `${Math.round(successProbability * 100)}%` : '——'}
+            </span>
+          </div>
         </div>
 
         <div className="dm-briefing-actions">
