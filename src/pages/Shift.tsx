@@ -39,8 +39,8 @@ import { getEffectiveStats } from '../engine/injury';
 import { splitXpPool } from '../engine/xp';
 import type { ActiveMission } from '../types/activeMission';
 import { calculateMissionProgress } from '../types/activeMission';
-import type { Mission } from '../types/mission';
 import type { Character } from '../types/character';
+import type { Mission } from '../types/mission';
 import type { ShiftState } from '../types/shift';
 import type { ShiftRewards, ShiftSummary } from '../types/shiftSummary';
 import { loadMissions } from '../utils/dataLoader';
@@ -137,6 +137,27 @@ function reviewInfo(
           }),
         };
   return { rewards, statPointAgentName, rank };
+}
+
+/** Phase-derived view flags + HUD readouts for the board frame. */
+function derivePhaseView(
+  shift: ShiftState,
+  now: number,
+  reports: ActiveMission[],
+  openReportId: string | null,
+  recordedShifts: number,
+  currentShiftNumber: number
+) {
+  const idle = shift.phase === 'idle';
+  const settled = shift.phase === 'ended' && shift.activeMissions.length === 0;
+  const showReview = settled && reports.length === 0;
+  const openReport = reports.find((m) => m.id === openReportId) ?? null;
+  const elapsedMs = Math.max(0, now - shift.shiftStartMs);
+  const spawnRemainingMs = Math.max(0, shift.config.shiftDurationMs - elapsedMs);
+  // Once settled, the HUD keeps naming the shift that just ran, not the next.
+  const hudShiftNumber = settled ? Math.max(1, recordedShifts) : currentShiftNumber;
+  const hudStatus = computeHudStatus(shift.phase, showReview, spawnRemainingMs);
+  return { idle, settled, showReview, openReport, hudShiftNumber, hudStatus };
 }
 
 function computeHudStatus(
@@ -298,6 +319,96 @@ function useSignatureUplinks({
     requirementsRevealed: revealedCallId !== null && revealedCallId === selectedCallId,
     resetReveals: () => setRevealedCallId(null),
   };
+}
+
+/**
+ * Float per-hero XP pops over the roster rail when a successful report is
+ * filed. Uses the same splitXpPool as the actual credit (disruption bonus
+ * included), so what pops always matches what landed in useAgentProgress —
+ * shares can differ by 1 between heroes; no artificial min-1 floor.
+ */
+function scheduleXpPops(
+  report: ActiveMission,
+  setXpPops: React.Dispatch<React.SetStateAction<XpPop[]>>,
+  timers: number[]
+): void {
+  const xp =
+    (report.mission.rewards?.experience ?? 0) + (report.disruption?.resolution?.xpBonus ?? 0);
+  const shares = splitXpPool(xp, report.agents.length);
+  setXpPops((prev) => [
+    ...prev,
+    ...report.agents.map((a, i) => ({
+      agentId: a.id,
+      amount: shares[i],
+      key: `${report.id}-${a.id}`,
+    })),
+  ]);
+  timers.push(
+    window.setTimeout(() => {
+      setXpPops((prev) => prev.filter((p) => !p.key.startsWith(report.id)));
+    }, 1700)
+  );
+}
+
+/** The idle-phase SHIFT.START paper window: stock readouts + clock-in. */
+function StartOverlay({
+  shiftNumber,
+  bandages,
+  pityRemaining,
+  onStart,
+}: {
+  shiftNumber: number;
+  bandages: number;
+  pityRemaining: number;
+  onStart: () => void;
+}) {
+  return (
+    <div className="dm-overlay">
+      <div className="sdn-window dm-overlay-window">
+        <div className="sdn-window-title">SHIFT.START</div>
+        <div className="sdn-window-body dm-start-body">
+          <div className="dm-start-number">SHIFT {shiftNumber}</div>
+          <p>
+            The Z-Team is on the clock. Calls land on the map with a countdown — open one to freeze
+            time and brief a team, or let it expire and eat the miss. Failed calls injure heroes;
+            review every filed report to free your people for the next call.
+          </p>
+          <div className="dm-start-hints sdn-readout">
+            <span>» BANDAGES IN STOCK: {bandages}</span>
+            <span>» BOOST CHARGES (&gt;76% GUARANTEE): {pityRemaining}</span>
+            <span>» LATER SHIFTS RUN HOTTER: MORE CALLS, TIGHTER TIMERS</span>
+          </div>
+          <button type="button" className="sdn-btn sdn-btn-primary" onClick={onStart}>
+            Clock in
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Toggle a hero in/out of the briefing team; adding respects `canSelect`. */
+function toggleTeamMember(prev: Character[], agent: Character, canSelect: boolean): Character[] {
+  if (prev.some((a) => a.id === agent.id)) {
+    return prev.filter((a) => a.id !== agent.id);
+  }
+  return canSelect ? [...prev, agent] : prev;
+}
+
+/** Whether a hero can be added to the briefing's team right now. */
+function canJoinBriefingTeam(
+  mission: Mission | null,
+  agent: Character,
+  busyAgentIds: Set<string>,
+  teamSize: number
+): boolean {
+  return (
+    !!mission &&
+    !isDowned(agent) &&
+    !busyAgentIds.has(agent.id) &&
+    !(mission.excludedAgents ?? []).includes(agent.id) &&
+    teamSize < mission.maxAgents
+  );
 }
 
 function loadStoredReports(): ActiveMission[] {
@@ -474,25 +585,12 @@ export function Shift() {
   };
 
   const canSelectAgent = (agent: Character) =>
-    !!selectedMission &&
-    !isDowned(agent) &&
-    !busyAgentIds.has(agent.id) &&
-    !(selectedMission.excludedAgents ?? []).includes(agent.id) &&
-    selectedAgents.length < selectedMission.maxAgents;
+    canJoinBriefingTeam(selectedMission, agent, busyAgentIds, selectedAgents.length);
 
   const toggleAgentSelection = (agent: Character) => {
-    if (!selectedMission) {
-      return;
+    if (selectedMission) {
+      setSelectedAgents((prev) => toggleTeamMember(prev, agent, canSelectAgent(agent)));
     }
-    setSelectedAgents((prev) => {
-      if (prev.some((a) => a.id === agent.id)) {
-        return prev.filter((a) => a.id !== agent.id);
-      }
-      if (!canSelectAgent(agent)) {
-        return prev;
-      }
-      return [...prev, agent];
-    });
   };
 
   const handleDeploy = () => {
@@ -514,29 +612,7 @@ export function Shift() {
     setReports((prev) => prev.filter((m) => m.id !== openReportId));
     resume();
     if (report?.outcome.success) {
-      const xp =
-        (report.mission.rewards?.experience ?? 0) + (report.disruption?.resolution?.xpBonus ?? 0);
-      // Same split as the actual credit (splitXpPool), so what pops here always
-      // matches what landed in useAgentProgress — shares can differ by 1
-      // between heroes; no artificial min-1 floor.
-      const shares = splitXpPool(xp, report.agents.length);
-      const stamp = Date.now();
-      setXpPops((prev) => [
-        ...prev,
-        ...report.agents.map((a, i) => ({
-          agentId: a.id,
-          amount: shares[i],
-          key: `${report.id}-${a.id}`,
-        })),
-      ]);
-      popTimersRef.current.push(
-        window.setTimeout(
-          () => {
-            setXpPops((prev) => prev.filter((p) => !p.key.startsWith(report.id)));
-          },
-          1700 + (stamp % 1)
-        )
-      );
+      scheduleXpPops(report, setXpPops, popTimersRef.current);
     }
   };
 
@@ -563,24 +639,19 @@ export function Shift() {
     userProgress.pityRemaining
   );
 
-  const idle = shift.phase === 'idle';
-  const ended = shift.phase === 'ended';
-  const settled = ended && shift.activeMissions.length === 0;
-  const showReview = settled && reports.length === 0;
-  const openReport = reports.find((m) => m.id === openReportId) ?? null;
-
-  const elapsedMs = Math.max(0, now - shift.shiftStartMs);
-  const spawnRemainingMs = Math.max(0, shift.config.shiftDurationMs - elapsedMs);
-  const hudShiftNumber = settled
-    ? Math.max(1, userProgress.shiftSummaries.length)
-    : currentShiftNumber;
+  const { idle, showReview, openReport, hudShiftNumber, hudStatus } = derivePhaseView(
+    shift,
+    now,
+    reports,
+    openReportId,
+    userProgress.shiftSummaries.length,
+    currentShiftNumber
+  );
   const {
     rewards: shiftRewards,
     statPointAgentName,
     rank: rankReview,
   } = reviewInfo(shift, userProgress.shiftSummaries, agents, userProgress.rankScore);
-
-  const hudStatus = computeHudStatus(shift.phase, showReview, spawnRemainingMs);
 
   return (
     <div className="dm-page">
@@ -611,27 +682,12 @@ export function Shift() {
           onOpenReport={handleOpenReport}
         >
           {idle && (
-            <div className="dm-overlay">
-              <div className="sdn-window dm-overlay-window">
-                <div className="sdn-window-title">SHIFT.START</div>
-                <div className="sdn-window-body dm-start-body">
-                  <div className="dm-start-number">SHIFT {currentShiftNumber}</div>
-                  <p>
-                    The Z-Team is on the clock. Calls land on the map with a countdown — open one to
-                    freeze time and brief a team, or let it expire and eat the miss. Failed calls
-                    injure heroes; review every filed report to free your people for the next call.
-                  </p>
-                  <div className="dm-start-hints sdn-readout">
-                    <span>» BANDAGES IN STOCK: {userProgress.medKits}</span>
-                    <span>» BOOST CHARGES (&gt;76% GUARANTEE): {userProgress.pityRemaining}</span>
-                    <span>» LATER SHIFTS RUN HOTTER: MORE CALLS, TIGHTER TIMERS</span>
-                  </div>
-                  <button type="button" className="sdn-btn sdn-btn-primary" onClick={startShift}>
-                    Clock in
-                  </button>
-                </div>
-              </div>
-            </div>
+            <StartOverlay
+              shiftNumber={currentShiftNumber}
+              bandages={userProgress.medKits}
+              pityRemaining={userProgress.pityRemaining}
+              onStart={startShift}
+            />
           )}
 
           {selectedMission && selectedCall && (

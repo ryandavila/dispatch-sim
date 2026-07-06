@@ -12,8 +12,7 @@ import { loadAgentById } from '../utils/dataLoader';
 
 export function Roster() {
   const { agents, updateAgentStats, healAgent } = useAgentProgress();
-  const { userProgress, consumeMedKit, consumeDefibrillator, recordPowerUse } =
-    useUserProgress();
+  const { userProgress, consumeMedKit, consumeDefibrillator, recordPowerUse } = useUserProgress();
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Source of truth for "which shift am I on": next = prior summaries + 1

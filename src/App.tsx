@@ -1,14 +1,15 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { Link, NavLink, Route, Routes } from 'react-router-dom';
 import './styles/sdn.css';
 import { isDowned } from './engine/injury';
 import { tierForScore } from './engine/rank';
 import { useAgentProgress } from './hooks/useAgentProgress';
 import { useUserProgress } from './hooks/useUserProgress';
-import { Home } from './pages/Home';
-import { Missions } from './pages/Missions';
-import { Roster } from './pages/Roster';
-import { Shift } from './pages/Shift';
+
+const Home = lazy(() => import('./pages/Home').then((m) => ({ default: m.Home })));
+const Missions = lazy(() => import('./pages/Missions').then((m) => ({ default: m.Missions })));
+const Roster = lazy(() => import('./pages/Roster').then((m) => ({ default: m.Roster })));
+const Shift = lazy(() => import('./pages/Shift').then((m) => ({ default: m.Shift })));
 
 const NAV_TABS = [
   { to: '/shift', label: 'Dispatch' },
@@ -79,12 +80,14 @@ function App() {
         </nav>
 
         <main className="sdn-main">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/roster" element={<Roster />} />
-            <Route path="/missions" element={<Missions />} />
-            <Route path="/shift" element={<Shift />} />
-          </Routes>
+          <Suspense fallback={<div className="sdn-readout">LOADING…</div>}>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/roster" element={<Roster />} />
+              <Route path="/missions" element={<Missions />} />
+              <Route path="/shift" element={<Shift />} />
+            </Routes>
+          </Suspense>
         </main>
 
         <footer className="sdn-bottombar">
