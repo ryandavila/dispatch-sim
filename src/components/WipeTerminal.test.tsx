@@ -59,7 +59,7 @@ describe('WipeTerminal', () => {
       localStorage.setItem(key, JSON.stringify({ stale: true }));
     }
 
-    render(
+    const { rerender } = render(
       <WipeTerminal
         resetProgress={resetProgress}
         resetAgentProgress={resetAgentProgress}
@@ -79,6 +79,16 @@ describe('WipeTerminal', () => {
       expect(localStorage.getItem(key)).toBeNull();
     }
     expect(screen.getByText(/terminal wiped/i)).toBeInTheDocument();
+
+    // The app chrome's ticking clock re-renders Home every second; the
+    // pending reboot must survive re-renders rather than being rescheduled.
+    rerender(
+      <WipeTerminal
+        resetProgress={resetProgress}
+        resetAgentProgress={resetAgentProgress}
+        reboot={reboot}
+      />
+    );
 
     expect(reboot).not.toHaveBeenCalled();
     act(() => {

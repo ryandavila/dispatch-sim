@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 /** localStorage keys holding mid-shift state that must not survive a wipe. */
 export const WIPE_STORAGE_KEYS = ['dispatch-sim-shift', 'dispatch-sim-reports'] as const;
@@ -30,15 +30,6 @@ export function WipeTerminal({
 
   const canConfirm = confirmText.trim().toUpperCase() === CONFIRM_TOKEN;
 
-  // App.tsx holds its own useUserProgress/useAgentProgress instances (plain
-  // useState, no shared store), so its chrome keeps rendering pre-wipe values
-  // until the page reloads. Reboot to guarantee no stale in-memory state.
-  useEffect(() => {
-    if (!wiped) return;
-    const timer = window.setTimeout(reboot, REBOOT_DELAY_MS);
-    return () => window.clearTimeout(timer);
-  }, [wiped, reboot]);
-
   const handleArm = () => {
     setArmed(true);
     setConfirmText('');
@@ -59,6 +50,13 @@ export function WipeTerminal({
     setArmed(false);
     setConfirmText('');
     setWiped(true);
+    // App.tsx holds its own useUserProgress/useAgentProgress instances (plain
+    // useState, no shared store), so its chrome keeps rendering pre-wipe
+    // values until the page reloads. Scheduled here rather than in an effect:
+    // the ticking app chrome re-renders this component every second, which
+    // would re-run an effect keyed on the default `reboot` prop's identity
+    // and reset the timer before it ever fires.
+    window.setTimeout(reboot, REBOOT_DELAY_MS);
   };
 
   if (wiped) {
