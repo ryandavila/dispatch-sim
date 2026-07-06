@@ -31,6 +31,35 @@ export const agentSchema = z.object({
   fixedRank: z.boolean().optional(),
 });
 
+const pillarSchema = z.enum(['Combat', 'Vigor', 'Mobility', 'Charisma', 'Intellect']);
+
+const disruptionOptionSchema = z
+  .object({
+    id: z.string().min(1),
+    label: z.string().min(1),
+    stat: pillarSchema.optional(),
+    threshold: z.number().int().min(1).max(10).optional(),
+    heroId: z.string().min(1).optional(),
+    xpBonus: z.number().nonnegative(),
+    passText: z.string().min(1),
+    failText: z.string().min(1),
+  })
+  .refine(
+    (option) =>
+      (option.stat !== undefined &&
+        option.threshold !== undefined &&
+        option.heroId === undefined) ||
+      (option.stat === undefined && option.threshold === undefined && option.heroId !== undefined),
+    {
+      message: 'a disruption option needs exactly one of (stat + threshold) or heroId',
+    }
+  );
+
+const disruptionSchema = z.object({
+  prompt: z.string().min(1),
+  options: z.array(disruptionOptionSchema).min(1),
+});
+
 export const missionSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
@@ -50,6 +79,7 @@ export const missionSchema = z.object({
       y: z.number().min(0).max(100),
     })
     .optional(),
+  disruption: disruptionSchema.optional(),
 });
 
 export const synergySchema = z.object({

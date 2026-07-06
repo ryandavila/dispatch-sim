@@ -23,6 +23,37 @@
       "name": "Torrance City Hall",
       "x": 52,
       "y": 38
+    },
+    "disruption": {
+      "prompt": "Branch just cracked under your weight. You've got about two seconds before you and the balloon both come down — what's the move?",
+      "options": [
+        {
+          "id": "lost-balloon-hop",
+          "label": "Hop to the next branch",
+          "stat": "Mobility",
+          "threshold": 3,
+          "xpBonus": 15,
+          "passText": "Clean hop, clean grab. The kid never even saw you wobble.",
+          "failText": "Missed the branch and rode it down — landed hard, balloon included."
+        },
+        {
+          "id": "lost-balloon-brace",
+          "label": "Brace and ride it down slow",
+          "stat": "Vigor",
+          "threshold": 3,
+          "xpBonus": 15,
+          "passText": "Absorbed the fall like a pro, balloon still in hand.",
+          "failText": "Braced too stiff — hit the ground wrong and dropped the balloon anyway."
+        },
+        {
+          "id": "lost-balloon-waterboy",
+          "label": "Ride a jet of water down like a slide",
+          "heroId": "waterboy",
+          "xpBonus": 25,
+          "passText": "Waterboy conjures a soft stream and surfs down it, balloon in hand, kid screaming with delight.",
+          "failText": "Not applicable — Waterboy doesn't miss this one."
+        }
+      ]
     }
   },
   {
@@ -48,6 +79,29 @@
       "name": "Cravens Ave",
       "x": 40,
       "y": 40
+    },
+    "disruption": {
+      "prompt": "Grandma's stopped dead in the crosswalk to lecture a honking driver, and the light's about to turn. Get her moving.",
+      "options": [
+        {
+          "id": "grandma-charm",
+          "label": "Sweet-talk her forward",
+          "stat": "Charisma",
+          "threshold": 4,
+          "xpBonus": 15,
+          "passText": "She pats your cheek, calls you a nice young man, and finishes the crossing on her own steam.",
+          "failText": "She's not buying it — you end up half-carrying her the rest of the way."
+        },
+        {
+          "id": "grandma-hustle",
+          "label": "Scoop her up and hustle across",
+          "stat": "Mobility",
+          "threshold": 3,
+          "xpBonus": 15,
+          "passText": "Quick and gentle — she's back on the curb before the light even turns.",
+          "failText": "Nearly dropped her mid-street; you both stumble the rest of the way, rattled."
+        }
+      ]
     }
   },
   {
@@ -99,6 +153,37 @@
       "name": "Sewer Junction C-4",
       "x": 48,
       "y": 70
+    },
+    "disruption": {
+      "prompt": "The clog just shifted and the backpressure is building fast — whatever's holding it back is about to let go all at once.",
+      "options": [
+        {
+          "id": "sewage-muscle",
+          "label": "Muscle the clog free by hand",
+          "stat": "Vigor",
+          "threshold": 4,
+          "xpBonus": 20,
+          "passText": "Ripped it loose in one go and rode out the flush without flinching.",
+          "failText": "Got the clog moving but the backpressure knocked you flat into the muck."
+        },
+        {
+          "id": "sewage-plan",
+          "label": "Redirect the flow through the side grate first",
+          "stat": "Intellect",
+          "threshold": 3,
+          "xpBonus": 20,
+          "passText": "Smart call — the side grate bleeds off the pressure and the clog comes apart clean.",
+          "failText": "Grate was already jammed too — the backpressure wins and everyone gets soaked."
+        },
+        {
+          "id": "sewage-waterboy",
+          "label": "Bend the backpressure around himself",
+          "heroId": "waterboy",
+          "xpBonus": 30,
+          "passText": "Waterboy just tells the water where to go — it listens, and Junction C-4 clears without a drop out of place.",
+          "failText": "Not applicable — Waterboy doesn't miss this one."
+        }
+      ]
     }
   },
   {
@@ -149,6 +234,29 @@
       "name": "Del Amo Mall",
       "x": 82,
       "y": 40
+    },
+    "disruption": {
+      "prompt": "One of the costumed idiots just threw an actual punch and a food court table went with it — this is escalating past shouting.",
+      "options": [
+        {
+          "id": "squabble-restrain",
+          "label": "Physically wedge them apart",
+          "stat": "Combat",
+          "threshold": 4,
+          "xpBonus": 25,
+          "passText": "Pinned both of them by the shoulders until the fight went out of their arms.",
+          "failText": "Got caught in the crossfire and took a punch meant for the other guy."
+        },
+        {
+          "id": "squabble-deescalate",
+          "label": "Call out both their old sidekick names, loudly",
+          "stat": "Charisma",
+          "threshold": 5,
+          "xpBonus": 25,
+          "passText": "Public humiliation works better than reason — they freeze, then slink off separately.",
+          "failText": "They just get louder about it — now it's a three-way shouting match."
+        }
+      ]
     }
   },
   {
@@ -200,6 +308,29 @@
       "name": "Granny's Donuts",
       "x": 24,
       "y": 44
+    },
+    "disruption": {
+      "prompt": "Someone in the crowd just yelled the Mayor's real height out loud and the room smells blood in the water — this is one bad beat from a pile-on.",
+      "options": [
+        {
+          "id": "roast-redirect",
+          "label": "Grab the mic and redirect the joke at yourself",
+          "stat": "Charisma",
+          "threshold": 5,
+          "xpBonus": 30,
+          "passText": "You take the hit for the room, the crowd laughs WITH you, and the Mayor gets a breather.",
+          "failText": "The joke lands flat and now they're roasting you too — double the damage control."
+        },
+        {
+          "id": "roast-read-room",
+          "label": "Read the crowd and cue the band to cut in",
+          "stat": "Intellect",
+          "threshold": 4,
+          "xpBonus": 30,
+          "passText": "Perfectly timed musical interruption — the moment dissolves into applause.",
+          "failText": "Cut in half a beat too late; the room's already turned ugly by the time the band starts."
+        }
+      ]
     }
   },
   {
@@ -225,6 +356,29 @@
       "name": "Crypto Night",
       "x": 36,
       "y": 30
+    },
+    "disruption": {
+      "prompt": "Someone just flipped a table onto the bar and the ringleader is rallying the rest of the room to rush the exits — this could turn into a stampede.",
+      "options": [
+        {
+          "id": "crypto-block",
+          "label": "Body-block the exits and hold the line",
+          "stat": "Combat",
+          "threshold": 6,
+          "xpBonus": 40,
+          "passText": "You hold the doorway like a wall — the stampede breaks against you and stalls out.",
+          "failText": "Got swept off your feet by the crowd — the exit's wide open and chaos pours out."
+        },
+        {
+          "id": "crypto-negotiate",
+          "label": "Talk the ringleader down mid-rally",
+          "stat": "Charisma",
+          "threshold": 6,
+          "xpBonus": 40,
+          "passText": "You get right in his face and remind him whose coin this actually was — the rally dies on his lips.",
+          "failText": "He shouts right over you and the room surges past both of you."
+        }
+      ]
     }
   },
   {
@@ -250,6 +404,37 @@
       "name": "Torrance College",
       "x": 68,
       "y": 26
+    },
+    "disruption": {
+      "prompt": "The crew just triggered a secondary laser grid you didn't know about — it's re-arming in seconds and it's between you and the vault.",
+      "options": [
+        {
+          "id": "museum-hack",
+          "label": "Hack the grid's re-arm sequence",
+          "stat": "Intellect",
+          "threshold": 6,
+          "xpBonus": 35,
+          "passText": "You catch the sequence mid-cycle and null it out before it locks back on.",
+          "failText": "Guessed the sequence wrong — the grid arms and you take a graze crossing it."
+        },
+        {
+          "id": "museum-thread",
+          "label": "Thread the beams by hand",
+          "stat": "Mobility",
+          "threshold": 5,
+          "xpBonus": 35,
+          "passText": "A tight, silent contortion act gets you through without tripping a single beam.",
+          "failText": "Clip a beam on the way through — alarms everywhere, and the crew scatters."
+        },
+        {
+          "id": "museum-prism",
+          "label": "Bend the beams around the whole team",
+          "heroId": "prism",
+          "xpBonus": 52,
+          "passText": "Prism refracts every beam a few inches wide — the grid re-arms around empty air while the team walks straight through.",
+          "failText": "Not applicable — Prism doesn't miss this one."
+        }
+      ]
     }
   },
   {
@@ -301,6 +486,37 @@
       "name": "The Sardine",
       "x": 30,
       "y": 62
+    },
+    "disruption": {
+      "prompt": "A support beam just gave way in the second house and there's a family still on the stairs — the whole floor is about to go.",
+      "options": [
+        {
+          "id": "blaze-shoulder",
+          "label": "Shoulder the beam and clear the stairs",
+          "stat": "Vigor",
+          "threshold": 7,
+          "xpBonus": 60,
+          "passText": "You hold the beam up on pure grit while the family scrambles past underneath.",
+          "failText": "The beam wins — you get everyone clear but take a bad hit doing it."
+        },
+        {
+          "id": "blaze-sprint",
+          "label": "Sprint them out before the floor drops",
+          "stat": "Mobility",
+          "threshold": 7,
+          "xpBonus": 60,
+          "passText": "Three trips up and down in the time it takes to blink — everyone's out before the floor goes.",
+          "failText": "Floor gives out mid-carry — a rough landing, but you're both still moving."
+        },
+        {
+          "id": "blaze-waterboy",
+          "label": "Blast a water tunnel through the collapse",
+          "heroId": "waterboy",
+          "xpBonus": 90,
+          "passText": "Waterboy punches a wall of water straight through the collapsing floor, carrying the family out on the current, steam and all.",
+          "failText": "Not applicable — Waterboy doesn't miss this one."
+        }
+      ]
     }
   },
   {

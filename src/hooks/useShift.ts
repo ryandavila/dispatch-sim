@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { bakeDisruption } from '../engine/disruption';
 import { getEffectiveStats } from '../engine/injury';
 import {
   applyProbabilityModifiers,
@@ -344,6 +345,18 @@ export function useShift(options: UseShiftOptions) {
       const missionDuration = timeBreakdown.missionDuration * TIME_SCALE;
       const travelReturnDuration = timeBreakdown.travelTimeReturn * TIME_SCALE;
       const restDuration = timeBreakdown.restTime * TIME_SCALE;
+
+      // Disrupted calls: baked here, after the outcome roll, on the same rng
+      // stream (bakeDisruption consumes a fixed 2 draws whenever the mission
+      // has authored disruption data, so replay stays stable).
+      const activeStartMs = now + travelOutboundDuration;
+      const disruption = bakeDisruption(
+        mission,
+        activeStartMs,
+        activeStartMs + missionDuration,
+        rng
+      );
+
       const activeMission: ActiveMission = {
         id: createId(),
         mission,
@@ -358,12 +371,28 @@ export function useShift(options: UseShiftOptions) {
         totalDuration:
           travelOutboundDuration + missionDuration + travelReturnDuration + restDuration,
         outcome,
+        ...(disruption ? { disruption } : {}),
       };
 
       applyState(assignCall(state, callId, activeMission));
       return activeMission;
     },
     [applyState, virtualNow]
+  );
+
+  /**
+   * Apply a pure transform to the live state — the seam for player actions
+   * that aren't reducer steps (disruption resolutions, hero powers). The
+   * transform must be pure; a same-reference return is a no-op.
+   */
+  const update = useCallback(
+    (fn: (state: ShiftState) => ShiftState) => {
+      const next = fn(stateRef.current);
+      if (next !== stateRef.current) {
+        applyState(next);
+      }
+    },
+    [applyState]
   );
 
   return {
@@ -375,5 +404,6 @@ export function useShift(options: UseShiftOptions) {
     pause,
     resume,
     reset,
+    update,
   };
 }

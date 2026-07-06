@@ -1,3 +1,4 @@
+import type { DisruptionResolution } from '../engine/disruption';
 import type { MissionOutcome } from '../engine/resolution';
 import type { Character } from './character';
 import type { Mission } from './mission';
@@ -17,6 +18,18 @@ export interface ActiveMission {
   restDuration: number; // Calculated based on slowest agent
   totalDuration: number;
   outcome: MissionOutcome; // Rolled at deploy time, revealed on completion
+  /**
+   * Baked at deploy time from the mission's `disruption` data (see
+   * `bakeDisruption`). Absent when the mission has no disruption data, or the
+   * seeded chance roll failed. Older persisted missions without this field
+   * keep working — it's optional and treated as "no disruption" when absent.
+   */
+  disruption?: {
+    /** Absolute ms (shift virtual clock) at which the radio interruption fires. */
+    firesAtMs: number;
+    /** Set once the player has picked and resolved an option. */
+    resolution?: DisruptionResolution;
+  };
 }
 
 export function createActiveMission(

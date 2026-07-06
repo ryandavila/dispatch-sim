@@ -857,3 +857,60 @@
   max-height: 340px;
   overflow-y: auto;
 }
+
+/* -- disruption window (CALL.DISRUPT) ---------------------------------------------- */
+
+.dm-disrupt {
+  width: min(480px, 94%);
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+.dm-disrupt-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  align-items: stretch;
+}
+
+.dm-disrupt-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.dm-disrupt-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  width: 100%;
+  text-align: left;
+}
+
+.dm-disrupt-option-label {
+  flex: 1;
+}
+
+.dm-disrupt-chip {
+  flex: 0 0 auto;
+  font-size: 0.72rem;
+  padding: 0.16rem 0.55rem;
+}
+
+.dm-disrupt-chip.hero {
+  background: var(--amber-bright);
+  border-color: var(--amber-deep);
+}
+
+.dm-disrupt-body .dm-stamp {
+  align-self: center;
+}
+
+.dm-disrupt-body .dm-report-lines {
+  text-align: center;
+}
+
+.dm-disrupt-body > .sdn-btn-primary {
+  align-self: center;
+}

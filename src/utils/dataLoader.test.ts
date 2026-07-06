@@ -113,6 +113,128 @@ describe('validateMissions', () => {
   });
 });
 
+describe('validateMissions — disruption blocks', () => {
+  const statOption = {
+    id: 'opt-1',
+    label: 'Push through',
+    stat: 'Combat',
+    threshold: 5,
+    xpBonus: 20,
+    passText: 'Passed.',
+    failText: 'Failed.',
+  };
+
+  const heroOption = {
+    id: 'opt-2',
+    label: 'Hero move',
+    heroId: 'waterboy',
+    xpBonus: 30,
+    passText: 'Hero passed.',
+    failText: 'Hero failed.',
+  };
+
+  it('accepts a mission with a stat-gated disruption option', () => {
+    const mission = {
+      ...validMission,
+      disruption: { prompt: 'Radio: **trouble**.', options: [statOption] },
+    };
+    const [validated] = validateMissions([mission]);
+    expect(validated.disruption?.options).toHaveLength(1);
+  });
+
+  it('accepts a mission with a hero-gated disruption option', () => {
+    const mission = {
+      ...validMission,
+      disruption: { prompt: 'Radio: **trouble**.', options: [heroOption] },
+    };
+    const [validated] = validateMissions([mission]);
+    expect(validated.disruption?.options[0].heroId).toBe('waterboy');
+  });
+
+  it('accepts a mission with both stat and hero options mixed', () => {
+    const mission = {
+      ...validMission,
+      disruption: { prompt: 'Radio: **trouble**.', options: [statOption, heroOption] },
+    };
+    expect(() => validateMissions([mission])).not.toThrow();
+  });
+
+  it('accepts a mission with no disruption block at all', () => {
+    const [validated] = validateMissions([validMission]);
+    expect(validated.disruption).toBeUndefined();
+  });
+
+  it('rejects an option with neither stat+threshold nor heroId', () => {
+    const badOption = {
+      id: 'opt-3',
+      label: 'Bad option',
+      xpBonus: 10,
+      passText: 'Pass',
+      failText: 'Fail',
+    };
+    const mission = {
+      ...validMission,
+      disruption: { prompt: 'Radio.', options: [badOption] },
+    };
+    expect(() => validateMissions([mission])).toThrow(/disruption option needs exactly one/);
+  });
+
+  it('rejects an option with BOTH stat+threshold and heroId', () => {
+    const badOption = { ...statOption, heroId: 'waterboy' };
+    const mission = {
+      ...validMission,
+      disruption: { prompt: 'Radio.', options: [badOption] },
+    };
+    expect(() => validateMissions([mission])).toThrow(/disruption option needs exactly one/);
+  });
+
+  it('rejects a stat option missing its threshold', () => {
+    const { threshold: _threshold, ...badOption } = statOption;
+    const mission = {
+      ...validMission,
+      disruption: { prompt: 'Radio.', options: [badOption] },
+    };
+    expect(() => validateMissions([mission])).toThrow(/disruption option needs exactly one/);
+  });
+
+  it('rejects an unknown stat pillar', () => {
+    const badOption = { ...statOption, stat: 'Luck' };
+    const mission = {
+      ...validMission,
+      disruption: { prompt: 'Radio.', options: [badOption] },
+    };
+    expect(() => validateMissions([mission])).toThrow(/disruption/);
+  });
+
+  it('rejects a threshold outside 1..10', () => {
+    const badOption = { ...statOption, threshold: 11 };
+    const mission = {
+      ...validMission,
+      disruption: { prompt: 'Radio.', options: [badOption] },
+    };
+    expect(() => validateMissions([mission])).toThrow(/disruption/);
+  });
+
+  it('rejects a disruption with an empty options array', () => {
+    const mission = { ...validMission, disruption: { prompt: 'Radio.', options: [] } };
+    expect(() => validateMissions([mission])).toThrow(/disruption/);
+  });
+
+  it('rejects a disruption missing a prompt', () => {
+    const mission = { ...validMission, disruption: { options: [statOption] } };
+    expect(() => validateMissions([mission])).toThrow(/disruption/);
+  });
+
+  it('loads the real missions data file with valid disruption blocks', () => {
+    const missions = loadMissions();
+    const withDisruption = missions.filter((m) => m.disruption);
+    expect(withDisruption.length).toBeGreaterThan(0);
+    for (const mission of withDisruption) {
+      expect(mission.disruption?.options.length).toBeGreaterThan(0);
+    }
+  });
+});
+
 describe('validateSynergies', () => {
   it('accepts an array of two-agent pairs', () => {
     const synergies = validateSynergies([

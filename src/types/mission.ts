@@ -1,4 +1,34 @@
-import type { StatPool } from './stats';
+import type { PillarType, StatPool } from './stats';
+
+/** A single stat-gated (or hero-gated) response option in a mid-mission disruption. */
+export interface DisruptionOption {
+  id: string;
+  /** Short imperative, e.g. "Kick the door". */
+  label: string;
+  /**
+   * Pillar checked against the capped team stat total. Omitted for hero
+   * options (see `heroId`) — the schema refine enforces exactly one of
+   * (`stat` + `threshold`) or `heroId`.
+   */
+  stat?: PillarType;
+  /** Pass iff the team's capped stat total (1..10) is >= this value. */
+  threshold?: number;
+  /** Hero-specific option: only visible when this hero is deployed; auto-succeeds. */
+  heroId?: string;
+  /** Added to the mission XP pool on pass; 0 on fail. */
+  xpBonus: number;
+  /** One-line radio aftermath on success. */
+  passText: string;
+  /** One-line radio aftermath on failure. */
+  failText: string;
+}
+
+/** A mid-mission radio interruption: a prompt plus a handful of response options. */
+export interface Disruption {
+  /** Radio interruption text, same voice as `briefing`; **keyword** highlights allowed. */
+  prompt: string;
+  options: DisruptionOption[];
+}
 
 export interface Mission {
   id: string;
@@ -24,6 +54,8 @@ export interface Mission {
     x: number;
     y: number;
   };
+  /** Optional mid-mission radio interruption, rolled during the 'active' phase. */
+  disruption?: Disruption;
 }
 
 export function createMission(

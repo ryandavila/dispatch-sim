@@ -1,10 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { CallBriefing } from '../components/dispatch/CallBriefing';
 import { CallReport } from '../components/dispatch/CallReport';
+import { DisruptionWindow } from '../components/dispatch/DisruptionWindow';
 import { RosterBar, type XpPop } from '../components/dispatch/RosterBar';
 import { TorranceMap } from '../components/dispatch/TorranceMap';
 import { ShiftHistorySection } from '../components/ShiftHistorySection';
 import { ShiftReview } from '../components/ShiftReview';
+import {
+  type DisruptionResolution,
+  recordDisruptionResolution,
+  sumTeamStats,
+} from '../engine/disruption';
 import { isDowned } from '../engine/injury';
 import { applyProbabilityModifiers, calculateTeamSuccessProbability } from '../engine/resolution';
 import { createRng } from '../engine/rng';
@@ -18,6 +24,8 @@ import '../styles/dispatch.css';
 import { getEffectiveStats } from '../engine/injury';
 import { splitXpPool } from '../engine/xp';
 import type { ActiveMission } from '../types/activeMission';
+import { calculateMissionProgress } from '../types/activeMission';
+import type { Mission } from '../types/mission';
 import type { Character } from '../types/character';
 import type { ShiftState } from '../types/shift';
 import type { ShiftRewards, ShiftSummary } from '../types/shiftSummary';
@@ -105,6 +113,88 @@ function computeHudStatus(
   return `CALLS INBOUND — ${Math.ceil(spawnRemainingMs / 1000)}S`;
 }
 
+/**
+ * Disrupted calls: when a deployed mission crosses its baked firesAtMs during
+ * the 'active' phase, freeze the clock (like CALL.BRIEFING) and put the radio
+ * interruption on screen. Only while running and with no other paper window
+ * open — if the shift already ended (pause() would no-op) or another overlay
+ * owns the pause, the disruption is skipped and simply pays no bonus.
+ */
+function useDisruptionWatch({
+  shift,
+  now,
+  overlayOpen,
+  pause,
+  resume,
+  update,
+}: {
+  shift: ShiftState;
+  now: number;
+  overlayOpen: boolean;
+  pause: () => void;
+  resume: () => void;
+  update: (fn: (state: ShiftState) => ShiftState) => void;
+}) {
+  const [disruptionMissionId, setDisruptionMissionId] = useState<string | null>(null);
+  const anyWindowOpen = overlayOpen || disruptionMissionId !== null;
+
+  useEffect(() => {
+    if (shift.phase !== 'running' || anyWindowOpen) {
+      return;
+    }
+    const due = shift.activeMissions.find(
+      (m) =>
+        m.disruption &&
+        !m.disruption.resolution &&
+        now >= m.disruption.firesAtMs &&
+        calculateMissionProgress(m, now).phase === 'active'
+    );
+    if (due) {
+      pause();
+      setDisruptionMissionId(due.id);
+    }
+  }, [shift, now, anyWindowOpen, pause]);
+
+  const disruptionMission = disruptionMissionId
+    ? (shift.activeMissions.find((m) => m.id === disruptionMissionId) ?? null)
+    : null;
+
+  const onDisruptionResolve = (resolution: DisruptionResolution) => {
+    if (disruptionMissionId) {
+      update((state) => recordDisruptionResolution(state, disruptionMissionId, resolution));
+    }
+  };
+
+  const onDisruptionContinue = () => {
+    setDisruptionMissionId(null);
+    resume();
+  };
+
+  return { disruptionMission, onDisruptionResolve, onDisruptionContinue };
+}
+
+/** Projected odds for the briefing panel — identical modifier stack to the deploy roll. */
+function briefingProbability(
+  mission: Mission | null,
+  team: Character[],
+  synergyLevels: number[],
+  pityRemaining: number
+): number {
+  if (!mission || team.length === 0) {
+    return 0;
+  }
+  return applyProbabilityModifiers({
+    baseProbability: calculateTeamSuccessProbability(
+      team.map((a) => getEffectiveStats(a)),
+      mission.requirements
+    ),
+    difficulty: mission.difficulty,
+    synergyLevels,
+    pityRemaining,
+    teamSize: team.length,
+  }).probability;
+}
+
 function loadStoredReports(): ActiveMission[] {
   try {
     const raw = localStorage.getItem(REPORTS_STORAGE_KEY);
@@ -161,7 +251,12 @@ export function Shift() {
   // pool split evenly via splitXpPool, matching the real game's "SPLIT N WAYS".
   const handleMissionComplete = (activeMission: ActiveMission) => {
     const { success } = activeMission.outcome;
-    const experienceGained = success ? (activeMission.mission.rewards?.experience ?? 0) : 0;
+    // A handled disruption's bonus joins the pool, but only when the call
+    // itself succeeds — a failed call pays nothing, radio heroics included.
+    const disruptionBonus = activeMission.disruption?.resolution?.xpBonus ?? 0;
+    const experienceGained = success
+      ? (activeMission.mission.rewards?.experience ?? 0) + disruptionBonus
+      : 0;
     const agentIds = activeMission.agents.map((a) => a.id);
 
     addMissionCompletion({
@@ -194,7 +289,7 @@ export function Shift() {
     });
   };
 
-  const { shift, now, start, deploy, pause, resume } = useShift({
+  const { shift, now, start, deploy, pause, resume, update } = useShift({
     missions,
     storageKey: 'dispatch-sim-shift',
     // Later shifts draw from a Hard/Extreme-weighted pool (escalation, Track 3).
@@ -229,6 +324,19 @@ export function Shift() {
     ...shift.activeMissions.flatMap((m) => m.agents.map((a) => a.id)),
     ...reports.flatMap((m) => m.agents.map((a) => a.id)),
   ]);
+
+  const {
+    disruptionMission,
+    onDisruptionResolve: handleDisruptionResolve,
+    onDisruptionContinue: handleDisruptionContinue,
+  } = useDisruptionWatch({
+    shift,
+    now,
+    overlayOpen: selectedCallId !== null || openReportId !== null,
+    pause,
+    resume,
+    update,
+  });
 
   const handleRespond = (callId: string) => {
     setSelectedCallId(callId);
@@ -283,7 +391,8 @@ export function Shift() {
     setReports((prev) => prev.filter((m) => m.id !== openReportId));
     resume();
     if (report?.outcome.success) {
-      const xp = report.mission.rewards?.experience ?? 0;
+      const xp =
+        (report.mission.rewards?.experience ?? 0) + (report.disruption?.resolution?.xpBonus ?? 0);
       // Same split as the actual credit (splitXpPool), so what pops here always
       // matches what landed in useAgentProgress — shares can differ by 1
       // between heroes; no artificial min-1 floor.
@@ -323,19 +432,12 @@ export function Shift() {
     selectedAgents.map((a) => a.id),
     (pairKey) => userProgress.synergyDispatchCounts[pairKey] ?? 0
   );
-  const successProbability =
-    selectedMission && selectedAgents.length > 0
-      ? applyProbabilityModifiers({
-          baseProbability: calculateTeamSuccessProbability(
-            selectedAgents.map((a) => getEffectiveStats(a)),
-            selectedMission.requirements
-          ),
-          difficulty: selectedMission.difficulty,
-          synergyLevels: teamSynergies.map((synergy) => synergy.level),
-          pityRemaining: userProgress.pityRemaining,
-          teamSize: selectedAgents.length,
-        }).probability
-      : 0;
+  const successProbability = briefingProbability(
+    selectedMission,
+    selectedAgents,
+    teamSynergies.map((synergy) => synergy.level),
+    userProgress.pityRemaining
+  );
 
   const idle = shift.phase === 'idle';
   const ended = shift.phase === 'ended';
@@ -418,6 +520,19 @@ export function Shift() {
               onDeploy={handleDeploy}
               onClose={closeBriefing}
             />
+          )}
+
+          {disruptionMission?.mission.disruption && (
+            <div className="dm-overlay">
+              <DisruptionWindow
+                mission={disruptionMission.mission}
+                disruption={disruptionMission.mission.disruption}
+                deployedAgents={disruptionMission.agents}
+                teamStats={sumTeamStats(disruptionMission.agents.map((a) => getEffectiveStats(a)))}
+                onResolve={handleDisruptionResolve}
+                onContinue={handleDisruptionContinue}
+              />
+            </div>
           )}
 
           {openReport && (

@@ -67,7 +67,10 @@ export function CallReport({ report, agents, onDismiss }: CallReportProps) {
     };
   }, [report.id, landing]);
 
-  const xp = mission.rewards?.experience ?? 0;
+  // A handled disruption's bonus only pays when the call itself succeeded —
+  // same gate as the actual credit in handleMissionComplete.
+  const disruption = report.disruption?.resolution;
+  const xp = (mission.rewards?.experience ?? 0) + (success ? (disruption?.xpBonus ?? 0) : 0);
   // The pool is split evenly across the deployed team (splitXpPool) — shares
   // can differ by 1 hero-to-hero, so each crew chip shows its actual share
   // rather than a shared/rounded number.
@@ -121,6 +124,12 @@ export function CallReport({ report, agents, onDismiss }: CallReportProps) {
                 {(outcome.roll * 100).toFixed(1)}
               </span>
               {outcome.pityUsed && <span>BOOST CHARGE SPENT — GUARANTEE CONVERTED THIS CALL</span>}
+              {disruption && (
+                <span>
+                  RADIO {disruption.success ? 'HANDLED' : 'FUMBLED'} — {disruption.text}
+                  {success && disruption.xpBonus > 0 && ` (+${disruption.xpBonus} XP TO POOL)`}
+                </span>
+              )}
               {success ? (
                 <span>
                   +{xp} XP{report.agents.length > 1 ? ` SPLIT ${report.agents.length} WAYS` : ''}
