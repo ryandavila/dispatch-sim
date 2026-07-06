@@ -19,6 +19,13 @@ const baseCharacter: Character = {
   restTime: 5,
 };
 
+/** Default no-op defib props, spread into tests that don't care about them. */
+const defibProps = {
+  defibrillators: 0,
+  defibAvailableThisShift: true,
+  onDefibrillate: vi.fn(),
+};
+
 describe('CharacterSheet - injuries and healing', () => {
   it('shows no injury alert for a healthy agent', () => {
     render(
@@ -27,10 +34,11 @@ describe('CharacterSheet - injuries and healing', () => {
         medKits={3}
         onUpdateCharacter={vi.fn()}
         onHealCharacter={vi.fn()}
+        {...defibProps}
       />
     );
 
-    expect(screen.queryByText(/Use Med Kit/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Use Bandage/)).not.toBeInTheDocument();
   });
 
   it('shows effective stats when injured', () => {
@@ -40,6 +48,7 @@ describe('CharacterSheet - injuries and healing', () => {
         medKits={3}
         onUpdateCharacter={vi.fn()}
         onHealCharacter={vi.fn()}
+        {...defibProps}
       />
     );
 
@@ -52,7 +61,42 @@ describe('CharacterSheet - injuries and healing', () => {
     expect(statValues).toEqual(['1', '1', '1', '1', '3']);
   });
 
-  it('heals the agent when a med kit is used', () => {
+  it('heals the agent when a bandage is used', () => {
+    const onHealCharacter = vi.fn();
+    const character = { ...baseCharacter, injuryCount: 1 };
+    render(
+      <CharacterSheet
+        character={character}
+        medKits={3}
+        onUpdateCharacter={vi.fn()}
+        onHealCharacter={onHealCharacter}
+        {...defibProps}
+      />
+    );
+
+    fireEvent.click(screen.getByText(/Use Bandage \(3 left\)/));
+    expect(onHealCharacter).toHaveBeenCalledWith(character);
+  });
+
+  it('disables healing when no bandages remain', () => {
+    const onHealCharacter = vi.fn();
+    render(
+      <CharacterSheet
+        character={{ ...baseCharacter, injuryCount: 1 }}
+        medKits={0}
+        onUpdateCharacter={vi.fn()}
+        onHealCharacter={onHealCharacter}
+        {...defibProps}
+      />
+    );
+
+    const healButton = screen.getByText(/Use Bandage \(0 left\)/);
+    expect(healButton).toBeDisabled();
+    fireEvent.click(healButton);
+    expect(onHealCharacter).not.toHaveBeenCalled();
+  });
+
+  it('disables the bandage button (and shows the defib hint) for a downed agent', () => {
     const onHealCharacter = vi.fn();
     const character = { ...baseCharacter, injuryCount: 2 };
     render(
@@ -61,30 +105,88 @@ describe('CharacterSheet - injuries and healing', () => {
         medKits={3}
         onUpdateCharacter={vi.fn()}
         onHealCharacter={onHealCharacter}
+        {...defibProps}
       />
     );
 
     expect(screen.getByText(/Downed/)).toBeInTheDocument();
 
-    fireEvent.click(screen.getByText(/Use Med Kit \(3 left\)/));
-    expect(onHealCharacter).toHaveBeenCalledWith(character);
+    const bandageButton = screen.getByText(/Use Bandage \(3 left\)/);
+    expect(bandageButton).toBeDisabled();
+    expect(bandageButton).toHaveAttribute('title', 'Downed — needs a defibrillator');
+    fireEvent.click(bandageButton);
+    expect(onHealCharacter).not.toHaveBeenCalled();
   });
 
-  it('disables healing when no med kits remain', () => {
-    const onHealCharacter = vi.fn();
+  it('does not show a defibrillator button for a merely-injured (not downed) agent', () => {
     render(
       <CharacterSheet
         character={{ ...baseCharacter, injuryCount: 1 }}
-        medKits={0}
+        medKits={3}
         onUpdateCharacter={vi.fn()}
-        onHealCharacter={onHealCharacter}
+        onHealCharacter={vi.fn()}
+        defibrillators={2}
+        defibAvailableThisShift={true}
+        onDefibrillate={vi.fn()}
       />
     );
 
-    const healButton = screen.getByText(/Use Med Kit \(0 left\)/);
-    expect(healButton).toBeDisabled();
-    fireEvent.click(healButton);
-    expect(onHealCharacter).not.toHaveBeenCalled();
+    expect(screen.queryByText(/Use Defibrillator/)).not.toBeInTheDocument();
+  });
+
+  it('revives a downed agent with the defibrillator button', () => {
+    const onDefibrillate = vi.fn();
+    const character = { ...baseCharacter, injuryCount: 2 };
+    render(
+      <CharacterSheet
+        character={character}
+        medKits={3}
+        onUpdateCharacter={vi.fn()}
+        onHealCharacter={vi.fn()}
+        defibrillators={1}
+        defibAvailableThisShift={true}
+        onDefibrillate={onDefibrillate}
+      />
+    );
+
+    const defibButton = screen.getByText(/Use Defibrillator \(1 left\)/);
+    expect(defibButton).not.toBeDisabled();
+    fireEvent.click(defibButton);
+    expect(onDefibrillate).toHaveBeenCalledWith(character);
+  });
+
+  it('disables the defibrillator button when out of stock', () => {
+    const character = { ...baseCharacter, injuryCount: 2 };
+    render(
+      <CharacterSheet
+        character={character}
+        medKits={3}
+        onUpdateCharacter={vi.fn()}
+        onHealCharacter={vi.fn()}
+        defibrillators={0}
+        defibAvailableThisShift={true}
+        onDefibrillate={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText(/Use Defibrillator \(0 left\)/)).toBeDisabled();
+  });
+
+  it('disables the defibrillator button when the one-per-shift charge is spent', () => {
+    const character = { ...baseCharacter, injuryCount: 2 };
+    render(
+      <CharacterSheet
+        character={character}
+        medKits={3}
+        onUpdateCharacter={vi.fn()}
+        onHealCharacter={vi.fn()}
+        defibrillators={3}
+        defibAvailableThisShift={false}
+        onDefibrillate={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText(/Use Defibrillator \(3 left\)/)).toBeDisabled();
   });
 });
 
@@ -98,6 +200,7 @@ describe('CharacterSheet - staged stat allocation', () => {
         medKits={0}
         onUpdateCharacter={vi.fn()}
         onHealCharacter={vi.fn()}
+        {...defibProps}
       />
     );
 
@@ -112,6 +215,7 @@ describe('CharacterSheet - staged stat allocation', () => {
         medKits={0}
         onUpdateCharacter={onUpdateCharacter}
         onHealCharacter={vi.fn()}
+        {...defibProps}
       />
     );
 
@@ -128,6 +232,7 @@ describe('CharacterSheet - staged stat allocation', () => {
         medKits={0}
         onUpdateCharacter={vi.fn()}
         onHealCharacter={vi.fn()}
+        {...defibProps}
       />
     );
 
@@ -143,6 +248,7 @@ describe('CharacterSheet - staged stat allocation', () => {
         medKits={0}
         onUpdateCharacter={vi.fn()}
         onHealCharacter={vi.fn()}
+        {...defibProps}
       />
     );
 
@@ -162,6 +268,7 @@ describe('CharacterSheet - staged stat allocation', () => {
         medKits={0}
         onUpdateCharacter={onUpdateCharacter}
         onHealCharacter={vi.fn()}
+        {...defibProps}
       />
     );
 
@@ -188,6 +295,7 @@ describe('CharacterSheet - staged stat allocation', () => {
         medKits={0}
         onUpdateCharacter={vi.fn()}
         onHealCharacter={vi.fn()}
+        {...defibProps}
       />
     );
 
@@ -214,6 +322,7 @@ describe('CharacterSheet - powers and info tabs', () => {
         medKits={0}
         onUpdateCharacter={vi.fn()}
         onHealCharacter={vi.fn()}
+        {...defibProps}
       />
     );
 
@@ -231,6 +340,7 @@ describe('CharacterSheet - powers and info tabs', () => {
         medKits={0}
         onUpdateCharacter={vi.fn()}
         onHealCharacter={vi.fn()}
+        {...defibProps}
       />
     );
 

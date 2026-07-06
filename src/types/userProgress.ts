@@ -19,6 +19,14 @@ export interface UserProgress {
   pityRemaining: number;
   /** Recorded, fully-settled shifts; length + 1 is the current shift number. */
   shiftSummaries: ShiftSummary[];
+  /** Persistent dispatcher rank meta-progression score. Can drop, floors at 0. */
+  rankScore: number;
+  /** All-time-best rankScore. Never decreases — gates tier reward payouts. */
+  bestRankScore: number;
+  /** One-per-shift revival item, earned from rank tier promotions. */
+  defibrillators: number;
+  /** Shift number in which the one-per-shift defibrillator was last used. */
+  defibUsedShift?: number;
 }
 
 /** Med kits a new player starts with. */
@@ -35,4 +43,7 @@ export const INITIAL_USER_PROGRESS: UserProgress = {
   synergyDispatchCounts: {},
   pityRemaining: INITIAL_PITY_CHARGES,
   shiftSummaries: [],
+  rankScore: 0,
+  bestRankScore: 0,
+  defibrillators: 0,
 };

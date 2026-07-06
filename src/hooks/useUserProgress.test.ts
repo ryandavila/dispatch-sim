@@ -63,6 +63,10 @@ describe('useUserProgress', () => {
     expect(result.current.userProgress.synergyDispatchCounts).toEqual({});
     expect(result.current.userProgress.pityRemaining).toBe(3);
     expect(result.current.userProgress.shiftSummaries).toEqual([]);
+    expect(result.current.userProgress.rankScore).toBe(0);
+    expect(result.current.userProgress.bestRankScore).toBe(0);
+    expect(result.current.userProgress.defibrillators).toBe(0);
+    expect(result.current.userProgress.defibUsedShift).toBeUndefined();
   });
 
   it('records shift summaries in order (source of truth for shift number)', () => {
@@ -344,6 +348,148 @@ describe('useUserProgress', () => {
     }
 
     expect(result.current.userProgress.pityRemaining).toBe(0);
+  });
+
+  it('should start with 0 defibrillators and 0 rank score', () => {
+    const { result } = renderHook(() => useUserProgress());
+
+    expect(result.current.userProgress.defibrillators).toBe(0);
+    expect(result.current.userProgress.rankScore).toBe(0);
+    expect(result.current.userProgress.bestRankScore).toBe(0);
+  });
+
+  it('applyRankProgress raises rankScore/bestRankScore and credits tier rewards crossed', () => {
+    const { result } = renderHook(() => useUserProgress());
+    const startMedKits = result.current.userProgress.medKits;
+
+    act(() => {
+      // Crosses DISPATCHER III (25): +2 bandages, +1 defibrillator.
+      result.current.applyRankProgress(30);
+    });
+
+    expect(result.current.userProgress.rankScore).toBe(30);
+    expect(result.current.userProgress.bestRankScore).toBe(30);
+    expect(result.current.userProgress.medKits).toBe(startMedKits + 2);
+    expect(result.current.userProgress.defibrillators).toBe(1);
+  });
+
+  it('applyRankProgress credits nothing extra when no new tier is crossed', () => {
+    const { result } = renderHook(() => useUserProgress());
+
+    act(() => {
+      result.current.applyRankProgress(10); // stays under DISPATCHER III (25)
+    });
+
+    expect(result.current.userProgress.rankScore).toBe(10);
+    expect(result.current.userProgress.defibrillators).toBe(0);
+  });
+
+  it('applyRankProgress floors rankScore at 0 on a large negative delta', () => {
+    const { result } = renderHook(() => useUserProgress());
+
+    act(() => {
+      result.current.applyRankProgress(10);
+    });
+    act(() => {
+      result.current.applyRankProgress(-100);
+    });
+
+    expect(result.current.userProgress.rankScore).toBe(0);
+    expect(result.current.userProgress.bestRankScore).toBe(10);
+  });
+
+  it('applyRankProgress never re-pays a tier crossed by an earlier best (drop-and-reclimb)', () => {
+    const { result } = renderHook(() => useUserProgress());
+
+    act(() => {
+      result.current.applyRankProgress(30); // crosses DISPATCHER III, +2/+1
+    });
+    expect(result.current.userProgress.defibrillators).toBe(1);
+
+    act(() => {
+      result.current.applyRankProgress(-25); // drop back down
+    });
+    act(() => {
+      result.current.applyRankProgress(10); // re-climb, still under old best
+    });
+
+    // No extra bandages/defibrillators from re-crossing the same tier.
+    expect(result.current.userProgress.defibrillators).toBe(1);
+  });
+
+  describe('consumeDefibrillator', () => {
+    it('refuses to consume when out of stock', () => {
+      const { result } = renderHook(() => useUserProgress());
+
+      let consumed = true;
+      act(() => {
+        consumed = result.current.consumeDefibrillator(1);
+      });
+
+      expect(consumed).toBe(false);
+      expect(result.current.userProgress.defibrillators).toBe(0);
+    });
+
+    it('consumes one and stamps defibUsedShift on success', () => {
+      const { result } = renderHook(() => useUserProgress());
+
+      act(() => {
+        result.current.applyRankProgress(30); // grants 1 defibrillator
+      });
+      expect(result.current.userProgress.defibrillators).toBe(1);
+
+      let consumed = false;
+      act(() => {
+        consumed = result.current.consumeDefibrillator(1);
+      });
+
+      expect(consumed).toBe(true);
+      expect(result.current.userProgress.defibrillators).toBe(0);
+      expect(result.current.userProgress.defibUsedShift).toBe(1);
+    });
+
+    it('refuses a second use within the same shift even with stock remaining', () => {
+      const { result } = renderHook(() => useUserProgress());
+
+      act(() => {
+        result.current.applyRankProgress(300); // grants plenty of defibrillators
+      });
+      const stock = result.current.userProgress.defibrillators;
+      expect(stock).toBeGreaterThan(1);
+
+      act(() => {
+        result.current.consumeDefibrillator(1);
+      });
+      expect(result.current.userProgress.defibrillators).toBe(stock - 1);
+
+      let consumedAgain = true;
+      act(() => {
+        consumedAgain = result.current.consumeDefibrillator(1);
+      });
+
+      expect(consumedAgain).toBe(false);
+      // Stock unchanged by the refused second attempt.
+      expect(result.current.userProgress.defibrillators).toBe(stock - 1);
+    });
+
+    it('allows one use per shift across different shift numbers', () => {
+      const { result } = renderHook(() => useUserProgress());
+
+      act(() => {
+        result.current.applyRankProgress(300);
+      });
+      const stock = result.current.userProgress.defibrillators;
+
+      act(() => {
+        result.current.consumeDefibrillator(1);
+      });
+      act(() => {
+        result.current.consumeDefibrillator(2);
+      });
+
+      expect(result.current.userProgress.defibrillators).toBe(stock - 2);
+      expect(result.current.userProgress.defibUsedShift).toBe(2);
+    });
   });
 
   it('should handle corrupted localStorage data gracefully', () => {

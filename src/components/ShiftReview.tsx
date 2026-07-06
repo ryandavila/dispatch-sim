@@ -1,6 +1,22 @@
 import type { ShiftTally } from '../types/shift';
 import type { ShiftRewards } from '../types/shiftSummary';
 
+/** Rank tier promoted into this shift, with its reward payout. */
+export interface RankPromotion {
+  name: string;
+  bandages: number;
+  defibrillators: number;
+}
+
+/** Rank meta-progression summary for this shift, shown on the review. */
+export interface RankReviewInfo {
+  tierName: string;
+  score: number;
+  /** Signed rank-score change this shift earned. */
+  delta: number;
+  promotions: RankPromotion[];
+}
+
 interface ShiftReviewProps {
   tally: ShiftTally;
   /** In-flight missions still returning; the tally is not final until 0. */
@@ -9,6 +25,8 @@ interface ShiftReviewProps {
   rewards?: ShiftRewards;
   /** Display name of the hero who received the stat points, if any. */
   statPointAgentName?: string;
+  /** Dispatcher rank progression for this shift; omitted call sites still compile. */
+  rank?: RankReviewInfo;
   onNewShift: () => void;
 }
 
@@ -18,6 +36,7 @@ export function ShiftReview({
   pendingMissions,
   rewards,
   statPointAgentName,
+  rank,
   onNewShift,
 }: ShiftReviewProps) {
   const total = tally.succeeded + tally.failed + tally.missed;
@@ -47,6 +66,8 @@ export function ShiftReview({
           <div className="dm-stamp ok dm-review-lit">🔥 Shift was lit</div>
         )}
 
+        {pendingMissions === 0 && rank && <RankSection rank={rank} />}
+
         {pendingMissions === 0 && rewards && (
           <RewardsSection rewards={rewards} statPointAgentName={statPointAgentName} />
         )}
@@ -63,6 +84,34 @@ export function ShiftReview({
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function RankSection({ rank }: { rank: RankReviewInfo }) {
+  const deltaSign = rank.delta > 0 ? '+' : '';
+  const deltaClass =
+    rank.delta > 0 ? 'dm-rank-delta-up' : rank.delta < 0 ? 'dm-rank-delta-down' : '';
+
+  return (
+    <div className="dm-review-rank">
+      <div className="dm-review-rewards-title">Dispatcher rank</div>
+      <div className="dm-rank-summary">
+        <span className="sdn-chip dm-rank-tier">{rank.tierName}</span>
+        <span className="dm-rank-score">RANK SCORE: {rank.score}</span>
+        <span className={`dm-rank-delta ${deltaClass}`}>
+          {deltaSign}
+          {rank.delta}
+        </span>
+      </div>
+      {rank.promotions.map((promotion) => (
+        <p key={promotion.name} className="dm-review-note dm-rank-promotion">
+          PROMOTED: {promotion.name} — +{promotion.bandages} BANDAGE
+          {promotion.bandages === 1 ? '' : 'S'}
+          {promotion.defibrillators > 0 &&
+            `, +${promotion.defibrillators} DEFIBRILLATOR${promotion.defibrillators === 1 ? '' : 'S'}`}
+        </p>
+      ))}
     </div>
   );
 }

@@ -69,8 +69,9 @@ vi.mock('../hooks/useAgentProgress', () => ({
 
 vi.mock('../hooks/useUserProgress', () => ({
   useUserProgress: vi.fn(() => ({
-    userProgress: { medKits: 2, shiftSummaries: [] },
+    userProgress: { medKits: 2, shiftSummaries: [], defibrillators: 1, defibUsedShift: undefined },
     consumeMedKit: vi.fn(() => true),
+    consumeDefibrillator: vi.fn(() => true),
   })),
 }));
 
@@ -165,5 +166,42 @@ describe('Roster - hero roster bar', () => {
     const charlieTile = screen.getByText('Charlie Agent').closest('.hs-hero-tile');
     expect(charlieTile).toHaveClass('hs-injured');
     expect(charlieTile).not.toHaveClass('hs-downed');
+  });
+
+  it('revives a downed agent via the defibrillator, consuming the shift charge and healing', async () => {
+    const { useUserProgress } = await import('../hooks/useUserProgress');
+    const { useAgentProgress } = await import('../hooks/useAgentProgress');
+    const consumeDefibrillator = vi.fn(() => true);
+    const healAgent = vi.fn();
+    vi.mocked(useUserProgress).mockReturnValue({
+      userProgress: {
+        medKits: 2,
+        shiftSummaries: [],
+        defibrillators: 1,
+        defibUsedShift: undefined,
+      },
+      consumeMedKit: vi.fn(() => true),
+      consumeDefibrillator,
+    } as unknown as ReturnType<typeof useUserProgress>);
+    vi.mocked(useAgentProgress).mockReturnValue({
+      agents,
+      updateAgentStats: vi.fn(),
+      healAgent,
+      awardExperience: vi.fn(),
+      resetAgentProgress: vi.fn(),
+    } as unknown as ReturnType<typeof useAgentProgress>);
+
+    render(
+      <MemoryRouter initialEntries={['/roster?character=agent-4']}>
+        <Roster />
+      </MemoryRouter>
+    );
+
+    const defibButton = screen.getByText(/Use Defibrillator/);
+    fireEvent.click(defibButton);
+
+    // currentShiftNumber = shiftSummaries.length + 1 = 1
+    expect(consumeDefibrillator).toHaveBeenCalledWith(1);
+    expect(healAgent).toHaveBeenCalledWith('agent-4');
   });
 });

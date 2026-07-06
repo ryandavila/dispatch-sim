@@ -96,6 +96,13 @@
   text-transform: uppercase;
 }
 
+.hs-alert-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  flex: none;
+}
+
 /* -- center: tab strip + panel -------------------------------------------- */
 
 .hs-center {

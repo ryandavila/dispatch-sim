@@ -28,4 +28,11 @@ export interface ShiftSummary {
   rewards: ShiftRewards;
   /** Hero who received the stat points; undefined when statPoints === 0. */
   statPointAgentId?: string;
+  /** rankDelta(tally) — the signed dispatcher rank-score change this shift earned. */
+  rankDelta?: number;
+  /**
+   * Names of RANK_TIERS newly crossed by this shift's all-time-best score.
+   * Persisted so the review (and history) can show the promotion payouts.
+   */
+  promotions?: string[];
 }

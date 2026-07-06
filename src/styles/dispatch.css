@@ -571,12 +571,21 @@
 }
 
 /* center when there's room without clipping overflow at the left edge */
-.dm-hero:first-child {
+.dm-hero-slot:first-child {
   margin-left: auto;
 }
 
-.dm-hero:last-child {
+.dm-hero-slot:last-child {
   margin-right: auto;
+}
+
+.dm-hero-slot {
+  position: relative;
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.3rem;
 }
 
 .dm-hero {
@@ -750,6 +759,32 @@
   pointer-events: none;
 }
 
+.dm-hero-defib {
+  flex: none;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--paper-bright);
+  background: linear-gradient(to bottom, var(--alert-bright), var(--alert));
+  border: 2px solid var(--ink);
+  border-radius: var(--radius);
+  padding: 0.2rem 0.3rem;
+  cursor: pointer;
+  animation: dm-report-pulse 1.6s ease-out infinite;
+}
+
+.dm-hero-defib:hover:not(:disabled) {
+  filter: brightness(1.12);
+}
+
+.dm-hero-defib:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+  animation: none;
+}
+
 .dm-hero-xp-pop {
   position: absolute;
   left: 50%;
@@ -813,6 +848,53 @@
   display: block;
   width: fit-content;
   margin: 0.4rem auto;
+}
+
+.dm-review-rank {
+  border-top: 2px solid var(--paper-edge);
+  margin-top: 0.6rem;
+  padding-top: 0.6rem;
+  text-align: center;
+}
+
+.dm-rank-summary {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.dm-rank-tier {
+  background: linear-gradient(to bottom, var(--amber-bright), var(--amber));
+}
+
+.dm-rank-score {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+  letter-spacing: 0.04em;
+}
+
+.dm-rank-delta {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.05rem;
+}
+
+.dm-rank-delta-up {
+  color: var(--amber-deep);
+}
+
+.dm-rank-delta-down {
+  color: var(--alert-deep);
+}
+
+.dm-rank-promotion {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--amber-deep);
 }
 
 .dm-review-rewards {

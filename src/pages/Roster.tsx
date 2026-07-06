@@ -10,8 +10,12 @@ import type { Character } from '../types/character';
 
 export function Roster() {
   const { agents, updateAgentStats, healAgent } = useAgentProgress();
-  const { userProgress, consumeMedKit } = useUserProgress();
+  const { userProgress, consumeMedKit, consumeDefibrillator } = useUserProgress();
   const [searchParams, setSearchParams] = useSearchParams();
+
+  // Source of truth for "which shift am I on": next = prior summaries + 1
+  // (mirrors Shift.tsx's currentShiftNumber derivation).
+  const currentShiftNumber = userProgress.shiftSummaries.length + 1;
 
   const selectedId = searchParams.get('character');
   const selectedCharacter: Character | null = useMemo(() => {
@@ -36,8 +40,14 @@ export function Roster() {
   };
 
   const handleHealCharacter = (character: Character) => {
-    // Healing clears all injuries and consumes one med kit
+    // Healing clears all injuries and consumes one bandage (med kit)
     if (!consumeMedKit()) return;
+    healAgent(character.id);
+  };
+
+  const handleDefibrillate = (character: Character) => {
+    // Reviving a downed hero consumes the one-per-shift defibrillator charge
+    if (!consumeDefibrillator(currentShiftNumber)) return;
     healAgent(character.id);
   };
 
@@ -49,6 +59,9 @@ export function Roster() {
           medKits={userProgress.medKits}
           onUpdateCharacter={handleUpdateCharacter}
           onHealCharacter={handleHealCharacter}
+          defibrillators={userProgress.defibrillators}
+          defibAvailableThisShift={userProgress.defibUsedShift !== currentShiftNumber}
+          onDefibrillate={handleDefibrillate}
         />
       )}
 

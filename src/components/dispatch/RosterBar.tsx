@@ -26,6 +26,10 @@ interface RosterBarProps {
   onToggle: (agent: Character) => void;
   onOpenReport: (activeMissionId: string) => void;
   xpPops: XpPop[];
+  /** Whether the DEFIB chip should be actionable (stock + one-per-shift charge). */
+  defibAvailable?: boolean;
+  /** Present only when a DEFIB chip should render at all, on downed tiles. */
+  onDefib?: (agent: Character) => void;
 }
 
 /** The hero rail along the bottom of the dispatch terminal. */
@@ -40,6 +44,8 @@ export function RosterBar({
   onToggle,
   onOpenReport,
   xpPops,
+  defibAvailable,
+  onDefib,
 }: RosterBarProps) {
   const busyBy = new Map<string, ActiveMission>();
   for (const m of activeMissions) {
@@ -73,6 +79,8 @@ export function RosterBar({
           }
         };
 
+        const showDefib = downed && !!onDefib;
+
         return (
           <HeroCard
             key={agent.id}
@@ -88,6 +96,9 @@ export function RosterBar({
             busy={!!mission}
             pops={xpPops.filter((p) => p.agentId === agent.id)}
             onClick={handleClick}
+            showDefib={showDefib}
+            defibDisabled={!defibAvailable}
+            onDefibClick={onDefib ? () => onDefib(agent) : undefined}
           />
         );
       })}
@@ -108,6 +119,10 @@ interface HeroCardProps {
   ariaLabel: string;
   pops: XpPop[];
   onClick: () => void;
+  /** Renders a DEFIB action chip on this (downed) tile. */
+  showDefib: boolean;
+  defibDisabled: boolean;
+  onDefibClick: (() => void) | undefined;
 }
 
 function HeroCard({
@@ -123,6 +138,9 @@ function HeroCard({
   ariaLabel,
   pops,
   onClick,
+  showDefib,
+  defibDisabled,
+  onDefibClick,
 }: HeroCardProps) {
   const classes = [
     'dm-hero',
@@ -136,51 +154,64 @@ function HeroCard({
     .join(' ');
 
   return (
-    <button
-      type="button"
-      className={classes}
-      onClick={onClick}
-      disabled={disabled}
-      aria-pressed={ariaPressed}
-      aria-label={ariaLabel}
-    >
-      {meter !== null && (
-        <span className="dm-hero-meter" aria-hidden="true">
-          <span className="dm-hero-meter-fill" style={{ width: `${meter * 100}%` }} />
-        </span>
-      )}
-      <span className="dm-hero-portrait" aria-hidden="true">
-        <HeroPortrait heroId={agent.id} size={88} />
-      </span>
-      <span className="dm-hero-name">{agent.name}</span>
-      <span className="dm-hero-rank" aria-hidden="true">
-        R{agent.level}
-      </span>
-      <span
-        className={`dm-hero-star${agent.availablePoints > 0 ? ' has-points' : ''}`}
-        aria-hidden="true"
+    <div className="dm-hero-slot">
+      <button
+        type="button"
+        className={classes}
+        onClick={onClick}
+        disabled={disabled}
+        aria-pressed={ariaPressed}
+        aria-label={ariaLabel}
       >
-        ★
-      </span>
-      {isInjured(agent) && !downed && (
-        <span className="dm-hero-injury" title={`Injured ×${getInjuryCount(agent)}`} />
+        {meter !== null && (
+          <span className="dm-hero-meter" aria-hidden="true">
+            <span className="dm-hero-meter-fill" style={{ width: `${meter * 100}%` }} />
+          </span>
+        )}
+        <span className="dm-hero-portrait" aria-hidden="true">
+          <HeroPortrait heroId={agent.id} size={88} />
+        </span>
+        <span className="dm-hero-name">{agent.name}</span>
+        <span className="dm-hero-rank" aria-hidden="true">
+          R{agent.level}
+        </span>
+        <span
+          className={`dm-hero-star${agent.availablePoints > 0 ? ' has-points' : ''}`}
+          aria-hidden="true"
+        >
+          ★
+        </span>
+        {isInjured(agent) && !downed && (
+          <span className="dm-hero-injury" title={`Injured ×${getInjuryCount(agent)}`} />
+        )}
+        {report && <span className="dm-hero-badge">REPORT</span>}
+        <AnimatePresence>
+          {pops.map((pop) => (
+            <motion.span
+              key={pop.key}
+              className="dm-hero-xp-pop"
+              initial={{ opacity: 0, y: 8, scale: 0.6 }}
+              animate={{ opacity: 1, y: -14, scale: 1 }}
+              exit={{ opacity: 0, y: -26 }}
+              transition={{ duration: 0.7, ease: 'easeOut' }}
+            >
+              +{pop.amount} XP
+            </motion.span>
+          ))}
+        </AnimatePresence>
+      </button>
+      {showDefib && (
+        <button
+          type="button"
+          className="dm-hero-defib"
+          onClick={onDefibClick}
+          disabled={defibDisabled}
+          title={defibDisabled ? 'No defibrillator charge available' : `Revive ${agent.name}`}
+        >
+          DEFIB
+        </button>
       )}
-      {report && <span className="dm-hero-badge">REPORT</span>}
-      <AnimatePresence>
-        {pops.map((pop) => (
-          <motion.span
-            key={pop.key}
-            className="dm-hero-xp-pop"
-            initial={{ opacity: 0, y: 8, scale: 0.6 }}
-            animate={{ opacity: 1, y: -14, scale: 1 }}
-            exit={{ opacity: 0, y: -26 }}
-            transition={{ duration: 0.7, ease: 'easeOut' }}
-          >
-            +{pop.amount} XP
-          </motion.span>
-        ))}
-      </AnimatePresence>
-    </button>
+    </div>
   );
 }
 

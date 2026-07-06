@@ -13,13 +13,13 @@ function isFlawless(summary: ShiftSummary): boolean {
   return succeeded + failed + missed > 0 && failed === 0 && missed === 0;
 }
 
-/** Compact "+2 med kits · +1 pity · +3 pts" line; empty when nothing was earned. */
+/** Compact "+2 bandages · +1 pity · +3 pts" line; empty when nothing was earned. */
 function rewardLabel(rewards: ShiftRewards): string {
   const parts: string[] = [];
   if (rewards.statPoints > 0)
     parts.push(`+${rewards.statPoints} stat pt${rewards.statPoints === 1 ? '' : 's'}`);
   if (rewards.medKits > 0)
-    parts.push(`+${rewards.medKits} med kit${rewards.medKits === 1 ? '' : 's'}`);
+    parts.push(`+${rewards.medKits} bandage${rewards.medKits === 1 ? '' : 's'}`);
   if (rewards.pityCharges > 0) parts.push(`+${rewards.pityCharges} pity`);
   return parts.join(' · ');
 }

@@ -17,6 +17,11 @@ interface CharacterSheetProps {
   medKits: number;
   onUpdateCharacter: (character: Character) => void;
   onHealCharacter: (character: Character) => void;
+  /** Defibrillator stock; the defib action only ever shows for downed heroes. */
+  defibrillators: number;
+  /** False once the one-per-shift defib charge has been spent. */
+  defibAvailableThisShift: boolean;
+  onDefibrillate: (character: Character) => void;
 }
 
 /** Alliterative role epithet per hero, shown under the hero name (e.g. "MERCILESS MERCENARY"). */
@@ -41,11 +46,79 @@ const TABS: { id: TabId; label: string }[] = [
   { id: 'info', label: 'Info' },
 ];
 
+interface InjuryAlertStripProps {
+  character: Character;
+  downed: boolean;
+  medKits: number;
+  onHealCharacter: (character: Character) => void;
+  defibrillators: number;
+  defibAvailableThisShift: boolean;
+  onDefibrillate: (character: Character) => void;
+}
+
+/** Injury banner: bandage action (disabled once downed) + defib action (downed only). */
+function InjuryAlertStrip({
+  character,
+  downed,
+  medKits,
+  onHealCharacter,
+  defibrillators,
+  defibAvailableThisShift,
+  onDefibrillate,
+}: InjuryAlertStripProps) {
+  const bandageTitle = downed
+    ? 'Downed — needs a defibrillator'
+    : medKits <= 0
+      ? 'No bandages left'
+      : 'Clear all injuries';
+  const defibTitle =
+    defibrillators <= 0
+      ? 'No defibrillators left'
+      : !defibAvailableThisShift
+        ? 'Already used a defibrillator this shift'
+        : 'Revive and clear all injuries';
+
+  return (
+    <div className="hs-alert-strip">
+      <span className="hs-alert-text">
+        {downed
+          ? `Downed — cannot deploy (−${getInjuryCount(character)} to all stats)`
+          : 'Injured — −1 to all stats'}
+      </span>
+      <div className="hs-alert-actions">
+        <button
+          type="button"
+          className="sdn-btn"
+          onClick={() => onHealCharacter(character)}
+          disabled={downed || medKits <= 0}
+          title={bandageTitle}
+        >
+          Use Bandage ({medKits} left)
+        </button>
+        {downed && (
+          <button
+            type="button"
+            className="sdn-btn sdn-btn-danger"
+            onClick={() => onDefibrillate(character)}
+            disabled={defibrillators <= 0 || !defibAvailableThisShift}
+            title={defibTitle}
+          >
+            Use Defibrillator ({defibrillators} left)
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function CharacterSheet({
   character,
   medKits,
   onUpdateCharacter,
   onHealCharacter,
+  defibrillators,
+  defibAvailableThisShift,
+  onDefibrillate,
 }: CharacterSheetProps) {
   const [activeTab, setActiveTab] = useState<TabId>('upgrade');
   // Staged (pending, unconfirmed) allocation, keyed by pillar. Cleared on
@@ -144,22 +217,15 @@ export function CharacterSheet({
           </div>
         )}
         {injured && (
-          <div className="hs-alert-strip">
-            <span className="hs-alert-text">
-              {downed
-                ? `Downed — cannot deploy (−${getInjuryCount(character)} to all stats)`
-                : 'Injured — −1 to all stats'}
-            </span>
-            <button
-              type="button"
-              className="sdn-btn"
-              onClick={() => onHealCharacter(character)}
-              disabled={medKits <= 0}
-              title={medKits <= 0 ? 'No med kits left' : 'Clear all injuries'}
-            >
-              Use Med Kit ({medKits} left)
-            </button>
-          </div>
+          <InjuryAlertStrip
+            character={character}
+            downed={downed}
+            medKits={medKits}
+            onHealCharacter={onHealCharacter}
+            defibrillators={defibrillators}
+            defibAvailableThisShift={defibAvailableThisShift}
+            onDefibrillate={onDefibrillate}
+          />
         )}
       </div>
 

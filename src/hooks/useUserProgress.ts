@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { applyRankDelta } from '../engine/rank';
 import type { ShiftRewards, ShiftSummary } from '../types/shiftSummary';
 import type { MissionCompletion, UserProgress } from '../types/userProgress';
 import { INITIAL_USER_PROGRESS } from '../types/userProgress';
@@ -104,6 +105,50 @@ export function useUserProgress() {
     }));
   };
 
+  /**
+   * Apply a shift's rank-score delta and credit any tier rewards newly
+   * crossed by the all-time-best score (see applyRankDelta). Bandages and
+   * defibrillators are credited in the same setState as the rank update.
+   */
+  const applyRankProgress = (delta: number) => {
+    setUserProgress((prev) => {
+      const { rankScore, bestRankScore, tiersGained } = applyRankDelta(
+        { rankScore: prev.rankScore, bestRankScore: prev.bestRankScore },
+        delta
+      );
+      const bandagesEarned = tiersGained.reduce((sum, tier) => sum + tier.rewards.bandages, 0);
+      const defibsEarned = tiersGained.reduce((sum, tier) => sum + tier.rewards.defibrillators, 0);
+      return {
+        ...prev,
+        rankScore,
+        bestRankScore,
+        medKits: prev.medKits + bandagesEarned,
+        defibrillators: prev.defibrillators + defibsEarned,
+      };
+    });
+  };
+
+  /**
+   * Consume the one-per-shift defibrillator. Returns false (no-op) unless
+   * stock is available AND it hasn't already been used this shift.
+   */
+  const consumeDefibrillator = (shiftNumber: number): boolean => {
+    if (userProgress.defibrillators <= 0 || userProgress.defibUsedShift === shiftNumber) {
+      return false;
+    }
+    setUserProgress((prev) => {
+      if (prev.defibrillators <= 0 || prev.defibUsedShift === shiftNumber) {
+        return prev;
+      }
+      return {
+        ...prev,
+        defibrillators: prev.defibrillators - 1,
+        defibUsedShift: shiftNumber,
+      };
+    });
+    return true;
+  };
+
   const isMissionCompleted = (missionId: string): boolean => {
     return userProgress.completedMissionIds.includes(missionId);
   };
@@ -120,6 +165,8 @@ export function useUserProgress() {
     recordShiftSummary,
     applyShiftRewards,
     consumePity,
+    applyRankProgress,
+    consumeDefibrillator,
     isMissionCompleted,
     resetProgress,
   };

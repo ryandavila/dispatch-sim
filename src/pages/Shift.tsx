@@ -5,13 +5,20 @@ import { DisruptionWindow } from '../components/dispatch/DisruptionWindow';
 import { RosterBar, type XpPop } from '../components/dispatch/RosterBar';
 import { TorranceMap } from '../components/dispatch/TorranceMap';
 import { ShiftHistorySection } from '../components/ShiftHistorySection';
-import { ShiftReview } from '../components/ShiftReview';
+import { type RankReviewInfo, ShiftReview } from '../components/ShiftReview';
 import {
   type DisruptionResolution,
   recordDisruptionResolution,
   sumTeamStats,
 } from '../engine/disruption';
 import { isDowned } from '../engine/injury';
+import {
+  applyRankDelta,
+  RANK_TIERS,
+  type RankProgress,
+  rankDelta,
+  tierForScore,
+} from '../engine/rank';
 import { applyProbabilityModifiers, calculateTeamSuccessProbability } from '../engine/resolution';
 import { createRng } from '../engine/rng';
 import { configForShift, missionPoolForShift } from '../engine/shiftLadder';
@@ -36,8 +43,11 @@ const REPORTS_STORAGE_KEY = 'dispatch-sim-reports';
 export interface FinalizeDeps {
   currentShiftNumber: number;
   agents: Character[];
+  /** Rank progress BEFORE this shift's delta is applied. */
+  rankProgress: RankProgress;
   grantAvailablePoints: (agentId: string, amount: number) => void;
   applyShiftRewards: (rewards: ShiftRewards) => void;
+  applyRankProgress: (delta: number) => void;
   recordShiftSummary: (summary: ShiftSummary) => void;
 }
 
@@ -65,6 +75,14 @@ export function finalizeShift(state: ShiftState, deps: FinalizeDeps): void {
   }
 
   deps.applyShiftRewards(rewards);
+
+  // Dispatcher rank (Track: rank meta-progression). tiersGained is recomputed
+  // here with the same pure applyRankDelta the hook uses internally, so the
+  // summary can persist the promotion names the hook's payout matched.
+  const shiftRankDelta = rankDelta(state.tally);
+  const { tiersGained } = applyRankDelta(deps.rankProgress, shiftRankDelta);
+  deps.applyRankProgress(shiftRankDelta);
+
   deps.recordShiftSummary({
     shiftNumber: deps.currentShiftNumber,
     completedAt: Date.now(),
@@ -72,6 +90,8 @@ export function finalizeShift(state: ShiftState, deps: FinalizeDeps): void {
     seed: state.config.seed,
     rewards,
     statPointAgentId,
+    rankDelta: shiftRankDelta,
+    ...(tiersGained.length > 0 ? { promotions: tiersGained.map((t) => t.name) } : {}),
   });
 }
 
@@ -83,8 +103,9 @@ export function finalizeShift(state: ShiftState, deps: FinalizeDeps): void {
 function reviewInfo(
   shift: ShiftState,
   summaries: ShiftSummary[],
-  agents: Character[]
-): { rewards?: ShiftRewards; statPointAgentName?: string } {
+  agents: Character[],
+  rankScore: number
+): { rewards?: ShiftRewards; statPointAgentName?: string; rank?: RankReviewInfo } {
   if (shift.phase !== 'ended' || shift.activeMissions.length > 0) {
     return {};
   }
@@ -93,7 +114,22 @@ function reviewInfo(
   const statPointAgentName = last?.statPointAgentId
     ? agents.find((a) => a.id === last.statPointAgentId)?.name
     : undefined;
-  return { rewards, statPointAgentName };
+  // Rank on the review: userProgress already reflects the applied delta by the
+  // time the review shows, so the current score is the post-shift score and
+  // the delta/promotions come from the just-recorded summary.
+  const rank: RankReviewInfo | undefined =
+    last?.rankDelta === undefined
+      ? undefined
+      : {
+          tierName: tierForScore(rankScore).name,
+          score: Math.max(0, rankScore),
+          delta: last.rankDelta,
+          promotions: (last.promotions ?? []).flatMap((name) => {
+            const tier = RANK_TIERS.find((t) => t.name === name);
+            return tier ? [{ name: tier.name, ...tier.rewards }] : [];
+          }),
+        };
+  return { rewards, statPointAgentName, rank };
 }
 
 function computeHudStatus(
@@ -206,13 +242,16 @@ function loadStoredReports(): ActiveMission[] {
 
 export function Shift() {
   const missions = loadMissions();
-  const { agents, awardExperience, applyInjuries, grantAvailablePoints } = useAgentProgress();
+  const { agents, awardExperience, applyInjuries, grantAvailablePoints, healAgent } =
+    useAgentProgress();
   const {
     userProgress,
     addMissionCompletion,
     recordSynergyDispatch,
     recordShiftSummary,
     applyShiftRewards,
+    applyRankProgress,
+    consumeDefibrillator,
     consumePity,
   } = useUserProgress();
 
@@ -283,8 +322,13 @@ export function Shift() {
     finalizeShift(state, {
       currentShiftNumber,
       agents,
+      rankProgress: {
+        rankScore: userProgress.rankScore,
+        bestRankScore: userProgress.bestRankScore,
+      },
       grantAvailablePoints,
       applyShiftRewards,
+      applyRankProgress,
       recordShiftSummary,
     });
   };
@@ -450,11 +494,11 @@ export function Shift() {
   const hudShiftNumber = settled
     ? Math.max(1, userProgress.shiftSummaries.length)
     : currentShiftNumber;
-  const { rewards: shiftRewards, statPointAgentName } = reviewInfo(
-    shift,
-    userProgress.shiftSummaries,
-    agents
-  );
+  const {
+    rewards: shiftRewards,
+    statPointAgentName,
+    rank: rankReview,
+  } = reviewInfo(shift, userProgress.shiftSummaries, agents, userProgress.rankScore);
 
   const hudStatus = computeHudStatus(shift.phase, showReview, spawnRemainingMs);
 
@@ -549,6 +593,7 @@ export function Shift() {
                   pendingMissions={shift.activeMissions.length}
                   rewards={shiftRewards}
                   statPointAgentName={statPointAgentName}
+                  rank={rankReview}
                   onNewShift={startShift}
                 />
               </div>
@@ -568,6 +613,14 @@ export function Shift() {
         onToggle={toggleAgentSelection}
         onOpenReport={handleOpenReport}
         xpPops={xpPops}
+        defibAvailable={
+          userProgress.defibrillators > 0 && userProgress.defibUsedShift !== currentShiftNumber
+        }
+        onDefib={(agent) => {
+          if (consumeDefibrillator(currentShiftNumber)) {
+            healAgent(agent.id);
+          }
+        }}
       />
 
       {(idle || showReview) && userProgress.shiftSummaries.length > 0 && (

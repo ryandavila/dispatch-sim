@@ -47,8 +47,10 @@ function deps(overrides: Partial<FinalizeDeps> = {}): FinalizeDeps {
   return {
     currentShiftNumber: 3,
     agents: [hero('alpha'), hero('beta')],
+    rankProgress: { rankScore: 0, bestRankScore: 0 },
     grantAvailablePoints: vi.fn(),
     applyShiftRewards: vi.fn(),
+    applyRankProgress: vi.fn(),
     recordShiftSummary: vi.fn(),
     ...overrides,
   };
@@ -124,5 +126,29 @@ describe('finalizeShift', () => {
       .calls[0][0] as ShiftSummary;
     expect(summary.rewards).toEqual({ medKits: 0, pityCharges: 0, statPoints: 0 });
     expect(summary.statPointAgentId).toBeUndefined();
+  });
+
+  it('applies the rank delta and records it (with promotions) on the summary', () => {
+    // 24 short of DISPATCHER III; 12/0/0 → +36 crosses it.
+    const d = deps({ rankProgress: { rankScore: 1, bestRankScore: 1 } });
+    finalizeShift(stateWith({ succeeded: 12, failed: 0, missed: 0 }), d);
+
+    expect(d.applyRankProgress).toHaveBeenCalledWith(36);
+    const summary = (d.recordShiftSummary as ReturnType<typeof vi.fn>).mock
+      .calls[0][0] as ShiftSummary;
+    expect(summary.rankDelta).toBe(36);
+    expect(summary.promotions).toEqual(['DISPATCHER III']);
+  });
+
+  it('records a negative rank delta and no promotions on a bad shift', () => {
+    const d = deps({ rankProgress: { rankScore: 50, bestRankScore: 80 } });
+    // 0*3 - 3*2 - 2*4 = -14; bestRankScore unchanged → nothing gained.
+    finalizeShift(stateWith({ succeeded: 0, failed: 3, missed: 2 }), d);
+
+    expect(d.applyRankProgress).toHaveBeenCalledWith(-14);
+    const summary = (d.recordShiftSummary as ReturnType<typeof vi.fn>).mock
+      .calls[0][0] as ShiftSummary;
+    expect(summary.rankDelta).toBe(-14);
+    expect(summary.promotions).toBeUndefined();
   });
 });

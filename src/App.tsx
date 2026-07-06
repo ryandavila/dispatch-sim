@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, NavLink, Route, Routes } from 'react-router-dom';
 import './styles/sdn.css';
 import { isDowned } from './engine/injury';
+import { tierForScore } from './engine/rank';
 import { useAgentProgress } from './hooks/useAgentProgress';
 import { useUserProgress } from './hooks/useUserProgress';
 import { Home } from './pages/Home';
@@ -36,6 +37,7 @@ function App() {
   }, []);
 
   const shiftNumber = userProgress.shiftSummaries.length + 1;
+  const rankTier = tierForScore(userProgress.rankScore);
   const readyAgents = agents.filter((a) => !isDowned(a)).length;
   const totalXp = agents.reduce((sum, a) => sum + a.experience, 0);
   const completions = userProgress.missionCompletions;
@@ -93,6 +95,7 @@ function App() {
           <span>speed: 40 mbps</span>
           <span>input detected: mouse</span>
           <span>pity charges: {userProgress.pityRemaining}</span>
+          <span>rank: {rankTier.name.toLowerCase()}</span>
           <span>battery: 100% [plugged in]</span>
           <span>volume: 30%</span>
         </footer>
